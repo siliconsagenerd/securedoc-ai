@@ -225,4 +225,5 @@ node_modules/
 data/*.db
 data/audit.log
 data/audit.log.*
+backend/data/
 .DS_Store
