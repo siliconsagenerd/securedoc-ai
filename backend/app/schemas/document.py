@@ -50,6 +50,7 @@ class AuditEvent(BaseModel):
 
 class DocumentResponse(BaseModel):
     task: Task
+    filename: str = ""
     sanitized_preview: str
     pii: PIIResult
     llm_output: str
