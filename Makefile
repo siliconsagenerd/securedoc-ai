@@ -19,7 +19,7 @@ backend-dev: ## Run the API locally with reload
 	cd backend && ./.venv/bin/uvicorn app.main:app --reload --port 8000
 
 backend-test: ## Run the backend test suite
-	cd backend && TOKEN_VAULT_KEY=test ./.venv/bin/python -m pytest -v
+	cd backend && ./.venv/bin/python -m pytest -v
 
 frontend-install: ## Install frontend dependencies
 	cd frontend && npm install

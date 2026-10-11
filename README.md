@@ -229,10 +229,13 @@ unsupported/unreadable file, **503** validator unavailable.
 ## Tests
 
 ```bash
-cd backend && TOKEN_VAULT_KEY=test ./.venv/bin/python -m pytest -v   # Python
+cd backend && ./.venv/bin/python -m pytest -v                        # Python
 cd java-validator && mvn test                                        # Java
 cd frontend && npm run build                                         # type-check + build
 ```
+
+The pytest suite sets its own `TOKEN_VAULT_KEY` and `SECUREDOC_API_KEY`, so no
+environment setup is needed (and pre-set values would override them).
 
 ## Documentation
 
