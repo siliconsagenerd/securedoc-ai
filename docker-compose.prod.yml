@@ -1,0 +1,44 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      APP_ENV: production
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      TOKEN_VAULT_KEY: ${TOKEN_VAULT_KEY:?TOKEN_VAULT_KEY is required}
+      SECUREDOC_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
+      JAVA_VALIDATOR_URL: http://java-validator:8080
+      DATABASE_URL: sqlite:///./data/securedoc.db
+      AUDIT_LOG_PATH: ./data/audit.log
+    volumes:
+      - securedoc_data:/app/data
+    depends_on:
+      java-validator:
+        condition: service_healthy
+    restart: unless-stopped
+
+  java-validator:
+    build: ./java-validator
+    environment:
+      MAX_FILE_SIZE_BYTES: ${MAX_UPLOAD_SIZE_MB:-5}000000
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    environment:
+      SECUREDOC_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?PUBLIC_ORIGIN is required}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # TLS certificates expected at ${CERTS_DIR}/server.crt and server.key
+      - ${CERTS_DIR:-./certs}:/etc/nginx/certs:ro
+      - ./frontend/prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+    restart: unless-stopped
+
+volumes:
+  securedoc_data:

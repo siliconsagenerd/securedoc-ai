@@ -275,3 +275,4 @@ JAVA_HOME=... npm run test:e2e    # JDK 21 required
 - [`docs/security-model.md`](docs/security-model.md) — threats, mitigations, limits.
 - [`docs/demo-script.md`](docs/demo-script.md) — a five-minute demo walkthrough.
 - [`docs/screenshot-checklist.md`](docs/screenshot-checklist.md) — shots to capture.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — production deployment, TLS, backup, rotation.
