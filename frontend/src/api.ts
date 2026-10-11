@@ -32,17 +32,12 @@ export interface BlockedResult {
   audit_event_id: string
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
-const API_KEY = import.meta.env.VITE_API_KEY ?? ''
-
 /**
- * Shortcut: the API key is compiled into the bundle, so it is visible to anyone
- * who loads the page. Fine for a local demo; a real deployment must keep the key
- * server-side (reverse proxy or session auth), upgrade before exposing publicly.
+ * All requests go to the same origin (relative paths). A server-side proxy
+ * (nginx in Docker, Vite's dev proxy locally) forwards them to the backend and
+ * injects the X-API-Key header. The key is never part of the frontend bundle.
  */
-function authHeaders(): Record<string, string> {
-  return API_KEY ? { 'X-API-Key': API_KEY } : {}
-}
+const API_BASE = ''
 
 /** Thrown when the backend guard blocks a request (HTTP 400). */
 export class BlockedError extends Error {
@@ -52,9 +47,9 @@ export class BlockedError extends Error {
   }
 }
 
-/** Thrown when the API key is missing or invalid (HTTP 401). */
+/** Thrown when authentication fails (HTTP 401, e.g. proxy key misconfigured). */
 export class UnauthorizedError extends Error {
-  constructor(message = 'Unauthorized — check VITE_API_KEY') {
+  constructor(message = 'Unauthorized — the API proxy is not configured') {
     super(message)
     this.name = 'UnauthorizedError'
   }
@@ -74,6 +69,13 @@ async function parseResult(res: Response): Promise<ProcessResult> {
   if (res.status === 401) {
     throw new UnauthorizedError(typeof data?.detail === 'string' ? data.detail : undefined)
   }
+  if (res.status === 429) {
+    const retry = res.headers.get('Retry-After')
+    throw new ApiError(
+      `Rate limit reached${retry ? ` — retry in ${retry}s` : ''}`,
+      res.status,
+    )
+  }
   if (res.status === 400 && data) {
     if (Array.isArray(data.reasons)) throw new BlockedError(data as BlockedResult)
     throw new ApiError(typeof data.message === 'string' ? data.message : 'File rejected', res.status)
@@ -87,7 +89,7 @@ async function parseResult(res: Response): Promise<ProcessResult> {
 
 export async function checkHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${BASE_URL}/health`)
+    const res = await fetch(`${API_BASE}/health`)
     return res.ok
   } catch {
     return false
@@ -95,9 +97,9 @@ export async function checkHealth(): Promise<boolean> {
 }
 
 export async function processDocument(text: string, task: Task): Promise<ProcessResult> {
-  const res = await fetch(`${BASE_URL}/api/process-document`, {
+  const res = await fetch(`${API_BASE}/api/process-document`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, task }),
   })
   return parseResult(res)
@@ -108,9 +110,8 @@ export async function uploadDocument(file: File, task: Task): Promise<ProcessRes
   form.append('file', file)
   form.append('task', task)
 
-  const res = await fetch(`${BASE_URL}/api/upload-document`, {
+  const res = await fetch(`${API_BASE}/api/upload-document`, {
     method: 'POST',
-    headers: authHeaders(),
     body: form,
   })
   return parseResult(res)

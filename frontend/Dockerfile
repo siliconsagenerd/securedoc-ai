@@ -6,16 +6,15 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-ARG VITE_API_BASE_URL=""
-ARG VITE_API_KEY=""
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
-    VITE_API_KEY=$VITE_API_KEY
+# No VITE_API_KEY: the API key is injected by nginx at request time, never built
+# into the bundle.
 RUN npm run build
 
 FROM nginx:1.27-alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Template is rendered by the nginx image entrypoint with SECUREDOC_API_KEY.
+COPY default.conf.template /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 

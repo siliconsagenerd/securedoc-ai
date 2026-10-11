@@ -59,12 +59,23 @@ else
 fi
 
 # --------------------------------------------- no API key in the bundle -----
-step "Frontend bundle must not contain the API key"
-if [ -f frontend/dist/index.html ]; then
-  if grep -rIl 'VITE_API_KEY' frontend/src frontend/.env* frontend/vite.config.ts 2>/dev/null; then
-    bad "VITE_API_KEY still referenced in frontend source/config"
+step "Frontend must not contain the API key"
+if grep -rIl -e 'VITE_API_KEY' -e 'X-API-Key' \
+     frontend/src frontend/.env* frontend/vite.config.ts 2>/dev/null; then
+  bad "API-key markers found in frontend source/config"
+else
+  ok "no API-key markers in frontend source/config"
+fi
+if [ -d frontend/dist ]; then
+  if grep -rIl -e 'VITE_API_KEY' -e 'X-API-Key' frontend/dist 2>/dev/null; then
+    bad "built bundle contains API-key markers"
   else
-    ok "no VITE_API_KEY reference in frontend source/config"
+    ok "built bundle contains no API-key markers"
+  fi
+  if [ -n "${SECUREDOC_API_KEY:-}" ] && grep -rIq -- "${SECUREDOC_API_KEY}" frontend/dist; then
+    bad "built bundle leaks the SECUREDOC_API_KEY value"
+  else
+    ok "built bundle does not contain the SECUREDOC_API_KEY value"
   fi
 else
   skip "frontend/dist missing — build the frontend first"

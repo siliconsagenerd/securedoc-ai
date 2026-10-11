@@ -9,7 +9,7 @@ This document lists what it protects against, how, and where the guarantees stop
 | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Prompt injection** ("ignore previous…")    | `GuardService` scores input 0–100 with named categories and blocks at `INJECTION_BLOCK_THRESHOLD`. |
 | **Obfuscated injection** (zero-width, escapes, base64) | Guard strips invisible characters and decodes escaped/base64 payloads before matching. |
-| **Unauthenticated use**                      | Protected endpoints require `X-API-Key`; missing/empty config fails closed; comparison is constant-time. |
+| **Unauthenticated use**                      | Protected endpoints require `X-API-Key`; the proxy injects it so the browser never holds it; missing/empty config fails closed; comparison is constant-time. |
 | **Malicious uploads**                        | The Java validator checks extension, content type, size, and filename safety before extraction. |
 | **PII leakage to the LLM provider**          | Presidio redaction replaces entities with opaque placeholders before transmission.               |
 | **PII leakage via logs**                     | Audit records store metadata only; raw text and entity values are never written.                 |
@@ -41,9 +41,10 @@ inclusion of free-form text.
   pattern set. The guard is defense-in-depth, not a proof.
 - **Single static API key** — `SECUREDOC_API_KEY` is one shared secret; there is
   no per-user identity, rotation, or rate limiting yet.
-- **Key shipped to the browser** — the frontend sends `VITE_API_KEY`, which is
-  compiled into the bundle. For public deployments keep the key server-side
-  (proxy or BFF) and treat the shipped value as non-secret.
+- **Key is server-side only** — the browser talks to nginx (or the Vite dev
+  proxy), which injects `X-API-Key` from `SECUREDOC_API_KEY`. The key is not in
+  the frontend bundle; anyone with shell access to the proxy host can still read
+  it, so protect that host.
 - **Validator checks metadata, not content** — the Java service inspects declared
   type, extension, and size; it does not scan file contents for malware.
 - **Detection is statistical** — Presidio can miss unusual PII formats and can

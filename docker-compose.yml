@@ -17,7 +17,8 @@ services:
       java-validator:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      # Bound to localhost for debugging; the browser reaches the API via nginx.
+      - "127.0.0.1:8000:8000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else 1)"]
@@ -31,7 +32,8 @@ services:
     environment:
       MAX_FILE_SIZE_BYTES: ${MAX_UPLOAD_SIZE_MB:-5}000000
     ports:
-      - "8080:8080"
+      # Localhost only; the backend reaches the validator over the compose network.
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health"]
@@ -41,11 +43,10 @@ services:
       start_period: 20s
 
   frontend:
-    build:
-      context: ./frontend
-      args:
-        VITE_API_BASE_URL: ""
-        VITE_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
+    build: ./frontend
+    environment:
+      # Injected by the nginx template at request time; never built into the SPA.
+      SECUREDOC_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
     depends_on:
       backend:
         condition: service_healthy

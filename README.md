@@ -15,15 +15,16 @@ data-minimisation principles.
 
 ```mermaid
 flowchart LR
-    U[Vue 3 dashboard] -->|X-API-Key| F[FastAPI backend]
-    F --> J[Java validator<br/>Spring Boot]
-    F --> G{Injection guard<br/>risk 0-100}
+    U[Vue 3 dashboard] -->|same-origin /api| F[nginx proxy<br/>injects X-API-Key]
+    F --> B[FastAPI backend]
+    B --> J[Java validator<br/>Spring Boot]
+    B --> G{Injection guard<br/>risk 0-100}
     G -->|blocked| A[(Audit log)]
     G -->|allowed| P[Presidio redaction<br/>+ Fernet vault]
     P -->|sanitized text only| M[Gemini API]
-    M --> F
-    F --> A
-    F --> U
+    M --> B
+    B --> A
+    B --> U
 ```
 
 ## Why this project
@@ -65,7 +66,7 @@ flowchart TB
         UI[Vue 3 dashboard]
     end
     subgraph edge [nginx]
-        NX[same-origin proxy /api /health]
+        NX[proxy /api /health<br/>injects X-API-Key]
     end
     subgraph backend [FastAPI]
         RT[API routes + X-API-Key auth]
@@ -124,9 +125,12 @@ docker compose up --build
 ```
 
 Frontend: `http://localhost:3000` · Backend: `http://localhost:8000` · Validator:
-`http://localhost:8080`. Nginx proxies `/api` and `/health` so the browser stays
-same-origin; the same `SECUREDOC_API_KEY` is passed to the frontend build as
-`VITE_API_KEY`.
+`http://localhost:8080`.
+
+The browser only ever talks to **nginx** on port 3000. nginx proxies `/api` and
+`/health` to the backend and injects `X-API-Key` from `SECUREDOC_API_KEY` at
+request time, so the key is **never built into the frontend bundle**. Backend and
+validator are bound to `127.0.0.1` for local debugging only.
 
 **Verify the stack** (Docker daemon required):
 
@@ -159,7 +163,7 @@ cd ../java-validator && mvn spring-boot:run
 
 # Frontend
 cd ../frontend && npm install
-cp .env.example .env                   # VITE_API_BASE_URL, VITE_API_KEY
+export SECUREDOC_API_KEY="your-key"    # dev proxy injects it server-side
 npm run dev                            # http://localhost:5173
 ```
 
