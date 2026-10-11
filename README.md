@@ -78,12 +78,30 @@ npm run dev                      # http://localhost:5173
 
 ```bash
 export TOKEN_VAULT_KEY="$(openssl rand -base64 32)"
+export SECUREDOC_API_KEY="$(openssl rand -hex 32)"
 export GEMINI_API_KEY="your-key"        # optional
 docker compose up --build
 ```
 
 Frontend: `http://localhost:3000` · Backend: `http://localhost:8000`.
 Nginx proxies `/api` and `/health` to the backend so the browser stays same-origin.
+The same `SECUREDOC_API_KEY` is passed to the frontend build as `VITE_API_KEY`.
+
+**Verify the Docker stack** (Docker daemon required):
+
+```bash
+docker compose up --build -d
+curl -s http://localhost:8000/health                       # {"status":"ok",...}
+open http://localhost:8000/docs                            # OpenAPI docs
+open http://localhost:3000                                 # dashboard
+SECUREDOC_API_KEY="$SECUREDOC_API_KEY" make smoke          # end-to-end smoke test
+make audit                                                 # print the audit log
+docker compose down
+```
+
+`make smoke` checks health, public endpoints, the `401` on unauthenticated
+requests, successful safe processing, absence of raw PII in the response, and
+that an injection attempt is blocked with `400`.
 
 ## Configuration
 
@@ -97,6 +115,7 @@ All settings are read from the environment or `backend/.env`.
 | `DATABASE_URL`       | `sqlite:///./data/securedoc.db`  | SQLite path.                                         |
 | `AUDIT_LOG_PATH`     | `./data/audit.log`               | Append-only JSONL audit log.                         |
 | `TOKEN_VAULT_KEY`    | _(empty)_                        | Fernet key or passphrase; **required** for redaction.|
+| `SECUREDOC_API_KEY`  | _(empty)_                        | API key for protected endpoints; **required** to serve them. |
 | `MAX_UPLOAD_SIZE_MB` | `5`                              | Maximum accepted document size.                      |
 
 ## API

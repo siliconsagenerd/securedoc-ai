@@ -5,20 +5,35 @@ services:
       APP_ENV: production
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      # Required: the stack refuses to start without an encryption key and API key.
       TOKEN_VAULT_KEY: ${TOKEN_VAULT_KEY:?TOKEN_VAULT_KEY is required}
+      SECUREDOC_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
       DATABASE_URL: sqlite:///./data/securedoc.db
       AUDIT_LOG_PATH: ./data/audit.log
     volumes:
-      - ./data:/app/data
+      - securedoc_data:/app/data
     ports:
       - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
 
   frontend:
     build:
       context: ./frontend
       args:
         VITE_API_BASE_URL: ""
+        VITE_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "3000:80"
+    restart: unless-stopped
+
+volumes:
+  securedoc_data:
