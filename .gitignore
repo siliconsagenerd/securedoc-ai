@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- SecureDoc AI project-specific ---
+.env
+node_modules/
+data/*.db
+data/audit.log
+data/audit.log.*
+.DS_Store
