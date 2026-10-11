@@ -227,3 +227,8 @@ data/audit.log
 data/audit.log.*
 backend/data/
 .DS_Store
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

@@ -246,6 +246,20 @@ cd frontend && npm run build                                         # type-chec
 The pytest suite sets its own `TOKEN_VAULT_KEY` and `SECUREDOC_API_KEY`, so no
 environment setup is needed (and pre-set values would override them).
 
+### End-to-end browser tests (Playwright)
+
+Boots the Java validator, the FastAPI backend, and the Vite dev server, then
+runs the full user journey in a real headless Chromium: safe-document
+processing + PII redaction + audit trail, malicious-payload blocking, and the
+upload flow. The suite runs **without a Gemini key** and asserts the graceful
+"LLM unavailable" state instead of calling a model.
+
+```bash
+cd frontend
+npx playwright install chromium   # once
+JAVA_HOME=... npm run test:e2e    # JDK 21 required
+```
+
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — components and request flow.
