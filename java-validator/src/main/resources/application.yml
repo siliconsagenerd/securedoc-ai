@@ -1,0 +1,10 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+validator:
+  # Maximum accepted document size in bytes (default 5 MiB).
+  max-file-size-bytes: ${MAX_FILE_SIZE_BYTES:5242880}
+
+spring:
+  application:
+    name: java-validator

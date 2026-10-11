@@ -8,10 +8,14 @@ services:
       # Required: the stack refuses to start without an encryption key and API key.
       TOKEN_VAULT_KEY: ${TOKEN_VAULT_KEY:?TOKEN_VAULT_KEY is required}
       SECUREDOC_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
+      JAVA_VALIDATOR_URL: http://java-validator:8080
       DATABASE_URL: sqlite:///./data/securedoc.db
       AUDIT_LOG_PATH: ./data/audit.log
     volumes:
       - securedoc_data:/app/data
+    depends_on:
+      java-validator:
+        condition: service_started
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -21,6 +25,14 @@ services:
       timeout: 5s
       retries: 3
       start_period: 25s
+
+  java-validator:
+    build: ./java-validator
+    environment:
+      MAX_FILE_SIZE_BYTES: ${MAX_UPLOAD_SIZE_MB:-5}000000
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 
   frontend:
     build:

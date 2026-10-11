@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     audit_log_path: str = "./data/audit.log"
     token_vault_key: str = ""
     securedoc_api_key: str = ""
+    java_validator_url: str = "http://localhost:8080"
     max_upload_size_mb: int = 5
 
     @model_validator(mode="after")
