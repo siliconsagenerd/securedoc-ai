@@ -25,6 +25,7 @@ _ALLOWED_FIELDS = {
     "model",
     "latency_ms",
     "outcome",
+    "client",
 }
 
 
@@ -43,6 +44,7 @@ class AuditService:
         model: str = "",
         latency_ms: int = 0,
         outcome: str = "",
+        client: str = "",
     ) -> str:
         event = {
             "event_id": str(uuid.uuid4()),
@@ -55,6 +57,7 @@ class AuditService:
             "model": model,
             "latency_ms": latency_ms,
             "outcome": outcome,
+            "client": client,
         }
         self._append(event)
         return event["event_id"]

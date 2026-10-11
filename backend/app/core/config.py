@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     injection_block_threshold: int = 40
     java_validator_url: str = "http://localhost:8080"
     max_upload_size_mb: int = 5
+    max_text_chars: int = 20_000
+    rate_limit_per_minute: int = 20
 
     @model_validator(mode="after")
     def _ensure_directories(self) -> "Settings":

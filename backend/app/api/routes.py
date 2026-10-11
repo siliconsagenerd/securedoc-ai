@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.core.auth import require_api_key
 from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.schemas.document import (
     BlockedResponse,
     DocumentRequest,
@@ -43,9 +44,11 @@ async def version() -> dict[str, str]:
     response_model=DocumentResponse,
     responses={400: {"model": BlockedResponse}, 401: {"description": "Missing or invalid API key"}},
     tags=["documents"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
 )
 async def process_document(request: DocumentRequest):
+    if len(request.text) > settings.max_text_chars:
+        return _too_large("Document text exceeds the maximum allowed length")
     if len(request.text.encode("utf-8")) > settings.max_upload_bytes:
         return _too_large()
     return _run_pipeline(request.text, request.task)
@@ -62,7 +65,7 @@ async def process_document(request: DocumentRequest):
         503: {"description": "Document validation service unavailable"},
     },
     tags=["documents"],
-    dependencies=[Depends(require_api_key)],
+    dependencies=[Depends(require_api_key), Depends(enforce_rate_limit)],
 )
 async def upload_document(
     file: UploadFile = File(...),
@@ -179,10 +182,10 @@ def _run_pipeline(text: str, task: Task, filename: str = ""):
     )
 
 
-def _too_large() -> JSONResponse:
+def _too_large(message: str = "Document exceeds the maximum allowed size") -> JSONResponse:
     return JSONResponse(
         status_code=413,
-        content={"message": "Document exceeds the maximum allowed size"},
+        content={"message": message},
     )
 
 

@@ -53,6 +53,8 @@ flowchart LR
   (AES-128-CBC + HMAC) and never leave the backend.
 - **Upload + text extraction** — `txt`, `md`, `pdf` (pypdf), `docx` (python-docx)
   are read **in memory only**; uploads are never written to disk.
+- **Abuse protection** — per-client-IP rate limiting (`429` + `Retry-After`) and
+  strict text/upload size limits before any model call.
 - **Audit trail** — every processed, blocked, or rejected request appends a
   metadata-only record to `data/audit.log`.
 - **Security dashboard** — Vue 3 UI with a live pipeline view, blocked-request
@@ -190,6 +192,8 @@ All settings are read from the environment or `backend/.env`.
 | `INJECTION_BLOCK_THRESHOLD` | `40`                             | Risk score (0–100) at or above which a request is blocked.  |
 | `JAVA_VALIDATOR_URL`        | `http://localhost:8080`          | Base URL of the validation service.                         |
 | `MAX_UPLOAD_SIZE_MB`        | `5`                              | Maximum accepted document size.                             |
+| `MAX_TEXT_CHARS`            | `20000`                          | Maximum text length for `/api/process-document`.            |
+| `RATE_LIMIT_PER_MINUTE`     | `20`                             | Document requests allowed per client IP per minute (`429`). |
 
 ## API
 
@@ -222,8 +226,9 @@ same pipeline — it is never stored.
 }
 ```
 
-Other statuses: **401** missing/invalid key, **413** too large, **415**
-unsupported/unreadable file, **503** validator unavailable.
+Other statuses: **401** missing/invalid key, **413** too large (text or file),
+**415** unsupported/unreadable file, **429** rate limit exceeded (with
+`Retry-After`), **503** validator unavailable.
 
 ### Other
 
