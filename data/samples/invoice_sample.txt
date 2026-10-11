@@ -1,0 +1,11 @@
+INVOICE #2026-0413
+
+Bill to:  Alice Johnson
+Company:  Nordwind Logistik GmbH
+Email:    alice.johnson@example.com
+Phone:    +49 151 12345678
+IBAN:     DE89 3704 0044 0532 0130 00
+Card:     4111 1111 1111 1111
+
+Please transfer the outstanding balance of EUR 4,820.00 by Friday.
+Contact our account manager Jonas Weber for any questions.
