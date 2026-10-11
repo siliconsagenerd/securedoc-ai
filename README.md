@@ -6,6 +6,7 @@
 [![Vue 3](https://img.shields.io/badge/vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![tests](https://img.shields.io/badge/tests-42%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%204%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
 
 **A security layer for LLM document processing.** Sensitive data is redacted and
 encrypted **locally** before any text reaches an external model, prompt-injection
@@ -35,6 +36,26 @@ Raw values never reach the model — here is the flow in practice:
 | Safe document, processed & redacted                                     | Prompt injection, blocked                                            |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | ![Processed result](docs/assets/processed.png)                          | ![Blocked request](docs/assets/blocked.png)                         |
+
+![Dashboard](docs/assets/dashboard.png)
+
+## Why this project fits an AI & Security role (applied for ELO)
+
+This repository is a deliberately small, end-to-end system built to demonstrate
+the skills an *KI & Security* engineer needs in practice:
+
+| ELO / AI-security domain                          | What this project shows                                          |
+| ------------------------------------------------- | ---------------------------------------------------------------- |
+| **Securing the AI supply chain**                  | LLM access handled like any other external dependency: an API key injected by the edge proxy, never shipped in client code, validated before use |
+| **Prompt-injection & evasion defence** (`OWASP LLM-01`) | Rule-based 0–100 risk scoring, category attribution, unicode/base64/zero-width evasion unmasking, hard threshold blocking |
+| **Data privacy & GDPR data minimisation**         | Presidio-based redaction runs *before* the model call; raw values never cross the boundary; only placeholders are ever sent out |
+| **Application/API security**                      | API-key auth, per-client rate limiting, size caps, fail-closed validation, append-only auditable logging, TLS in the prod compose |
+| **Polyglot engineering + testing discipline**     | FastAPI + Spring Boot + Vue/TS; pytest, mvn, Playwright E2E and a one-command verification script |
+| **Realistic production concerns**                 | containerised deployment (dev + prod compose), healthchecks, Dockerfiles, backup/rotation runbook |
+
+The repo is also mapped to the **OWASP LLM Top 10** and **EU AI Act** risk
+patterns in [`docs/security-model.md`](docs/security-model.md) — including what
+is *not* mitigated, so the threat model is honest rather than decorative.
 
 ## Why this project
 
@@ -268,6 +289,15 @@ cd frontend
 npx playwright install chromium   # once
 JAVA_HOME=... npm run test:e2e    # JDK 21 required
 ```
+
+## Acknowledgements
+
+- **PII detection/anonymisation** — [Microsoft Presidio](https://microsoft.github.io/presidio/).
+- **Prompt-injection taxonomy** — aligned with the [OWASP LLM Application
+  Security Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+  (overflow attacks, indirect injection, prompt leakage) and the EU AI Act risk
+  taxonomy.
+- **Document validation microservice** — Spring Boot 3.
 
 ## Documentation
 
