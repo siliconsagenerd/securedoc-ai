@@ -30,6 +30,9 @@ export default defineConfig({
         AUDIT_LOG_PATH: '/tmp/securedoc-e2e-audit.log',
         DATABASE_URL: 'sqlite:////tmp/securedoc-e2e.db',
         JAVA_VALIDATOR_URL: 'http://127.0.0.1:8080',
+        // E2E makes repeated calls from one client IP; the rate limiter has its
+        // own dedicated pytest coverage, so keep the suite uncoupled from it.
+        RATE_LIMIT_PER_MINUTE: '1000',
       },
       url: 'http://127.0.0.1:8000/health',
       timeout: 120_000,

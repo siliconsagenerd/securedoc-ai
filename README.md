@@ -27,6 +27,15 @@ flowchart LR
     B --> U
 ```
 
+```
+Raw values never reach the model — here is the flow in practice:
+
+![SecureDoc AI — live demo](docs/assets/demo-flow.gif)
+
+| Safe document, processed & redacted                                     | Prompt injection, blocked                                            |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| ![Processed result](docs/assets/processed.png)                          | ![Blocked request](docs/assets/blocked.png)                         |
+
 ## Why this project
 
 - **Defence in depth** — a metadata validator (Java), an injection guard, and PII
