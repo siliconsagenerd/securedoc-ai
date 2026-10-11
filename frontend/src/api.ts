@@ -15,6 +15,7 @@ export interface PIIResult {
 
 export interface ProcessResult {
   task: Task
+  filename?: string
   sanitized_preview: string
   pii: PIIResult
   llm_output: string
@@ -25,6 +26,8 @@ export interface ProcessResult {
 export interface BlockedResult {
   message: string
   reasons: string[]
+  categories?: string[]
+  score?: number
   risk_level: string
   audit_event_id: string
 }
@@ -65,6 +68,23 @@ export class ApiError extends Error {
   }
 }
 
+async function parseResult(res: Response): Promise<ProcessResult> {
+  const data = await res.json().catch(() => null)
+
+  if (res.status === 401) {
+    throw new UnauthorizedError(typeof data?.detail === 'string' ? data.detail : undefined)
+  }
+  if (res.status === 400 && data) {
+    if (Array.isArray(data.reasons)) throw new BlockedError(data as BlockedResult)
+    throw new ApiError(typeof data.message === 'string' ? data.message : 'File rejected', res.status)
+  }
+  if (!res.ok) {
+    const message = (data && (data.message || data.detail)) || `Request failed (${res.status})`
+    throw new ApiError(typeof message === 'string' ? message : `Request failed (${res.status})`, res.status)
+  }
+  return data as ProcessResult
+}
+
 export async function checkHealth(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE_URL}/health`)
@@ -80,18 +100,18 @@ export async function processDocument(text: string, task: Task): Promise<Process
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ text, task }),
   })
+  return parseResult(res)
+}
 
-  const data = await res.json().catch(() => null)
+export async function uploadDocument(file: File, task: Task): Promise<ProcessResult> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('task', task)
 
-  if (res.status === 401) {
-    throw new UnauthorizedError(typeof data?.detail === 'string' ? data.detail : undefined)
-  }
-  if (res.status === 400 && data) {
-    throw new BlockedError(data as BlockedResult)
-  }
-  if (!res.ok) {
-    const message = (data && (data.message || data.detail)) || `Request failed (${res.status})`
-    throw new ApiError(typeof message === 'string' ? message : `Request failed (${res.status})`, res.status)
-  }
-  return data as ProcessResult
+  const res = await fetch(`${BASE_URL}/api/upload-document`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: form,
+  })
+  return parseResult(res)
 }
