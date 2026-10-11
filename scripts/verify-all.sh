@@ -60,11 +60,18 @@ fi
 
 # --------------------------------------------- no API key in the bundle -----
 step "Frontend must not contain the API key"
-if grep -rIl -e 'VITE_API_KEY' -e 'X-API-Key' \
+# VITE_* is the anti-pattern: it compiles the key into the bundle. Plain
+# X-API-Key plumbing (dev proxy, nginx template, comments) is legitimate.
+if grep -rIl -e 'VITE_API_KEY' \
      frontend/src frontend/.env* frontend/vite.config.ts 2>/dev/null; then
-  bad "API-key markers found in frontend source/config"
+  bad "VITE_API_KEY markers found in frontend source/config"
 else
-  ok "no API-key markers in frontend source/config"
+  ok "no VITE_API_KEY markers in frontend source/config"
+fi
+if [ -n "${SECUREDOC_API_KEY:-}" ] && grep -rIq -- "${SECUREDOC_API_KEY}" frontend/src frontend/.env frontend/vite.config.ts 2>/dev/null; then
+  bad "SECUREDOC_API_KEY value present in frontend source/config"
+else
+  ok "SECUREDOC_API_KEY value not present in frontend source/config"
 fi
 if [ -d frontend/dist ]; then
   if grep -rIl -e 'VITE_API_KEY' -e 'X-API-Key' frontend/dist 2>/dev/null; then

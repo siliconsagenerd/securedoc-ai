@@ -7,6 +7,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
+    // First safe-document call cold-loads Presidio/spaCy (multi-second); the
+    // injection/upload paths are fast. Keep a generous per-assertion budget.
+    expect: { timeout: 15_000 },
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: [
