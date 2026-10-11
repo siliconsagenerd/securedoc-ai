@@ -30,12 +30,30 @@ export interface BlockedResult {
 }
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
+const API_KEY = import.meta.env.VITE_API_KEY ?? ''
+
+/**
+ * Shortcut: the API key is compiled into the bundle, so it is visible to anyone
+ * who loads the page. Fine for a local demo; a real deployment must keep the key
+ * server-side (reverse proxy or session auth), upgrade before exposing publicly.
+ */
+function authHeaders(): Record<string, string> {
+  return API_KEY ? { 'X-API-Key': API_KEY } : {}
+}
 
 /** Thrown when the backend guard blocks a request (HTTP 400). */
 export class BlockedError extends Error {
   constructor(public readonly data: BlockedResult) {
     super(data.message)
     this.name = 'BlockedError'
+  }
+}
+
+/** Thrown when the API key is missing or invalid (HTTP 401). */
+export class UnauthorizedError extends Error {
+  constructor(message = 'Unauthorized — check VITE_API_KEY') {
+    super(message)
+    this.name = 'UnauthorizedError'
   }
 }
 
@@ -59,12 +77,15 @@ export async function checkHealth(): Promise<boolean> {
 export async function processDocument(text: string, task: Task): Promise<ProcessResult> {
   const res = await fetch(`${BASE_URL}/api/process-document`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({ text, task }),
   })
 
   const data = await res.json().catch(() => null)
 
+  if (res.status === 401) {
+    throw new UnauthorizedError(typeof data?.detail === 'string' ? data.detail : undefined)
+  }
   if (res.status === 400 && data) {
     throw new BlockedError(data as BlockedResult)
   }

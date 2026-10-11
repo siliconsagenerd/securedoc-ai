@@ -2,10 +2,11 @@
 
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from app import __version__
+from app.core.auth import require_api_key
 from app.core.config import settings
 from app.schemas.document import (
     BlockedResponse,
@@ -32,8 +33,9 @@ async def version() -> dict[str, str]:
 @router.post(
     "/process-document",
     response_model=DocumentResponse,
-    responses={400: {"model": BlockedResponse}},
+    responses={400: {"model": BlockedResponse}, 401: {"description": "Missing or invalid API key"}},
     tags=["documents"],
+    dependencies=[Depends(require_api_key)],
 )
 async def process_document(request: DocumentRequest):
     started = time.perf_counter()
