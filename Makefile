@@ -53,5 +53,8 @@ smoke: ## Run the API smoke test against a running backend
 
 test: backend-test frontend-build java-test ## Run every test suite
 
+verify-all: ## Run all checks (adds bundle-secret + Docker runtime when available)
+	./scripts/verify-all.sh
+
 .PHONY: help backend-install backend-dev backend-test frontend-install \
-	frontend-dev frontend-build java-test docker-build up down logs audit smoke test
+	frontend-dev frontend-build java-test docker-build up down logs audit smoke test verify-all
