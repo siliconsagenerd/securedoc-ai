@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     )
 
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
     app_env: str = "development"
     database_url: str = "sqlite:///./data/securedoc.db"
     audit_log_path: str = "./data/audit.log"
