@@ -16,7 +16,8 @@ class GuardResult(BaseModel):
     allowed: bool
     risk_level: Literal["low", "medium", "high"]
     reasons: list[str] = Field(default_factory=list)
-    score: int = 0
+    categories: list[str] = Field(default_factory=list)
+    score: int = Field(default=0, ge=0, le=100)
 
 
 class EntityMetadata(BaseModel):
@@ -61,5 +62,7 @@ class BlockedResponse(BaseModel):
 
     message: str = "Request blocked by security policy"
     reasons: list[str] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
     risk_level: str = "high"
+    score: int = 0
     audit_event_id: str

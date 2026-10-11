@@ -64,7 +64,9 @@ async def process_document(request: DocumentRequest):
             status_code=400,
             content=BlockedResponse(
                 reasons=verdict.reasons,
+                categories=verdict.categories,
                 risk_level=verdict.risk_level,
+                score=verdict.score,
                 audit_event_id=event_id,
             ).model_dump(),
         )
