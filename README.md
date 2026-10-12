@@ -6,7 +6,7 @@
 [![Vue 3](https://img.shields.io/badge/vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![tests](https://img.shields.io/badge/tests-42%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%204%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
+[![tests](https://img.shields.io/badge/tests-42%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%208%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
 
 **A security layer for LLM document processing.** Sensitive data is redacted and
 encrypted **locally** before any text reaches an external model, prompt-injection
@@ -62,7 +62,7 @@ is *not* mitigated, so the threat model is honest rather than decorative.
 - **Defence in depth** — a metadata validator (Java), an injection guard, and PII
   redaction are independent layers; each one can reject a request.
 - **Data minimisation by construction** — the model only ever sees placeholders
-  such as `[PERSON_1]`; raw values never cross the process boundary.
+  such as `[PII_EMAIL_ADDRESS_<id>]`; raw values never cross the process boundary.
 - **Polyglot, production-shaped** — FastAPI for the pipeline, Spring Boot for the
   validation service, Vue for the UI, Docker Compose to run the whole stack.
 
@@ -139,10 +139,13 @@ java-validator/                # Spring Boot validation microservice
   src/main/java/com/securedoc/validator/
   src/test/java/com/securedoc/validator/
 frontend/                      # Vue 3 + TypeScript + Vite dashboard
-docs/                          # architecture, security model, demo script
+docs/                          # architecture, security model, demo script, verification
 scripts/smoke-test.sh          # end-to-end curl checks
+scripts/verify-all.sh          # one-command verification (pytest + mvn + build + e2e)
 Makefile
-docker-compose.yml
+docker-compose.yml             # dev stack (nginx, backend, validator)
+docker-compose.prod.yml        # production stack (TLS, restricted ports)
+.env.production.example        # production secrets template
 ```
 
 ## Quick start
@@ -273,8 +276,10 @@ cd java-validator && mvn test                                        # Java
 cd frontend && npm run build                                         # type-check + build
 ```
 
-The pytest suite sets its own `TOKEN_VAULT_KEY` and `SECUREDOC_API_KEY`, so no
-environment setup is needed (and pre-set values would override them).
+The pytest suite configures its own `TOKEN_VAULT_KEY` and `SECUREDOC_API_KEY`
+via `setdefault` in `tests/conftest.py`, so it runs without environment setup —
+and an explicitly exported value is honoured, so the auth tests always exercise
+the key the app is actually configured with.
 
 ### End-to-end browser tests (Playwright)
 
@@ -288,6 +293,7 @@ upload flow. The suite runs **without a Gemini key** and asserts the graceful
 cd frontend
 npx playwright install chromium   # once
 JAVA_HOME=... npm run test:e2e    # JDK 21 required
+npm run capture                   # regenerate the screenshots in docs/assets/
 ```
 
 ## Acknowledgements
@@ -305,4 +311,6 @@ JAVA_HOME=... npm run test:e2e    # JDK 21 required
 - [`docs/security-model.md`](docs/security-model.md) — threats, mitigations, limits.
 - [`docs/demo-script.md`](docs/demo-script.md) — a five-minute demo walkthrough.
 - [`docs/screenshot-checklist.md`](docs/screenshot-checklist.md) — shots to capture.
+- [`docs/verification.md`](docs/verification.md) — release check results and the
+  items that require a Docker daemon or a live Gemini key.
 - [`DEPLOYMENT.md`](DEPLOYMENT.md) — production deployment, TLS, backup, rotation.
