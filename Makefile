@@ -6,6 +6,9 @@
 PY  := backend/.venv/bin/python
 PIP := backend/.venv/bin/pip
 
+# Bounded health wait (seconds) used by `make smoke`.
+HEALTH_TIMEOUT := 60
+
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -48,12 +51,18 @@ logs: ## Tail stack logs
 audit: ## Print the audit log from the running backend container
 	docker compose exec backend sh -c 'test -f /app/data/audit.log && cat /app/data/audit.log || echo "no audit log yet — process a document first"'
 
-smoke: ## Run the API smoke test (inside the running stack; falls back to a local backend)
-	@if docker compose exec -T backend true 2>/dev/null; then \
-		docker compose exec -T backend python /app/scripts/smoke.py; \
-	else \
-		BASE_URL=$${BASE_URL:-http://127.0.0.1:8000} $(PY) backend/scripts/smoke.py; \
-	fi
+smoke: ## Run the API smoke test (waits for backend + validator health first)
+	@echo "Ensuring the stack is running..."
+	@docker compose up -d >/dev/null 2>&1 || { echo "ERROR: could not start the Compose stack"; exit 1; }
+	@echo "Waiting for backend health (up to $(HEALTH_TIMEOUT)s)..."
+	@i=0; until docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" >/dev/null 2>&1; do \
+		i=$$((i+1)); [ $$i -ge $(HEALTH_TIMEOUT) ] && { echo "ERROR: backend not healthy after $(HEALTH_TIMEOUT)s"; exit 1; }; sleep 1; \
+	done; echo "  backend healthy"
+	@echo "Waiting for Java validator health (up to $(HEALTH_TIMEOUT)s)..."
+	@i=0; until docker compose exec -T java-validator wget -q -O - http://127.0.0.1:8080/health >/dev/null 2>&1; do \
+		i=$$((i+1)); [ $$i -ge $(HEALTH_TIMEOUT) ] && { echo "ERROR: java-validator not healthy after $(HEALTH_TIMEOUT)s"; exit 1; }; sleep 1; \
+	done; echo "  java-validator healthy"
+	@docker compose exec -T backend python /app/scripts/smoke.py
 
 eval-guard: ## Run the offline prompt-injection guard evaluation
 	$(PY) backend/evals/run.py
