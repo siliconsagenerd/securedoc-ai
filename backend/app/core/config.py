@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     securedoc_api_key: str = ""
     injection_block_threshold: int = 40
     java_validator_url: str = "http://localhost:8080"
+    # Comma-separated list of browser origins allowed to call the API. In
+    # production set this to the Vercel dashboard origin (and nothing else).
+    allowed_cors_origins: str = "http://localhost:5173"
     max_upload_size_mb: int = 5
     max_text_chars: int = 20_000
     rate_limit_per_minute: int = 20
@@ -45,6 +48,10 @@ class Settings(BaseSettings):
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.allowed_cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache
