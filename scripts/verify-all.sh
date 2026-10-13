@@ -104,16 +104,20 @@ if docker_ready; then
   if TOKEN_VAULT_KEY="$(openssl rand -base64 32)" \
      SECUREDOC_API_KEY="$(openssl rand -hex 32)" \
      docker compose up --build -d; then
-    # Wait for the backend healthcheck to go green.
+    # Checks run inside the compose network, so they work whether the daemon is
+    # local or remote (a remote daemon's published ports are not on 127.0.0.1).
     for _ in $(seq 1 60); do
-      if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then break; fi
+      if docker compose exec -T backend \
+           python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')" >/dev/null 2>&1; then break; fi
       sleep 2
     done
-    API_KEY="$(docker compose exec -T backend printenv SECUREDOC_API_KEY 2>/dev/null || true)"
-    run "backend /health" bash -c 'curl -fsS http://127.0.0.1:8000/health | grep -q status'
-    run "java-validator /health" bash -c 'curl -fsS http://127.0.0.1:8080/health >/dev/null'
-    run "frontend /" bash -c 'curl -fsS http://127.0.0.1:3000/ >/dev/null'
-    run "smoke test" bash -c "SECUREDOC_API_KEY='${API_KEY}' BASE_URL=http://127.0.0.1:8000 ./scripts/smoke-test.sh"
+    run "backend /health" bash -c \
+      'docker compose exec -T backend python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:8000/health\").status == 200 else 1)"'
+    run "java-validator /health" bash -c \
+      'docker compose exec -T java-validator wget -q -O - http://127.0.0.1:8080/health >/dev/null'
+    run "frontend /" bash -c \
+      'docker compose exec -T frontend wget -q -O - http://127.0.0.1/ >/dev/null'
+    run "smoke test" bash -c 'docker compose exec -T backend python /app/scripts/smoke.py'
     docker compose down >/dev/null 2>&1 || true
   else
     bad "docker compose up"

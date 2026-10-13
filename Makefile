@@ -46,10 +46,14 @@ logs: ## Tail stack logs
 	docker compose logs -f
 
 audit: ## Print the audit log from the running backend container
-	docker compose exec backend cat /app/data/audit.log
+	docker compose exec backend sh -c 'test -f /app/data/audit.log && cat /app/data/audit.log || echo "no audit log yet — process a document first"'
 
-smoke: ## Run the API smoke test against a running backend
-	./scripts/smoke-test.sh
+smoke: ## Run the API smoke test (inside the running stack; falls back to a local backend)
+	@if docker compose exec -T backend true 2>/dev/null; then \
+		docker compose exec -T backend python /app/scripts/smoke.py; \
+	else \
+		BASE_URL=$${BASE_URL:-http://127.0.0.1:8000} $(PY) backend/scripts/smoke.py; \
+	fi
 
 eval-guard: ## Run the offline prompt-injection guard evaluation
 	$(PY) backend/evals/run.py

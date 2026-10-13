@@ -53,7 +53,9 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "3000:80"
+      # 3002 because 3000/3001 are commonly taken (Gitea, Grafana, uptime-kuma);
+      # the browser reaches the API through this nginx.
+      - "3002:80"
     restart: unless-stopped
 
 volumes:

@@ -19,7 +19,7 @@ On a running daemon:
 
 - `docker compose up -d --build`: backend, frontend, and java-validator images
   build; backend waits for a healthy java-validator; all three containers healthy.
-- Frontend serves the SPA at `http://127.0.0.1:3000`; `backend`/`java-validator`
+- Frontend serves the SPA at `http://127.0.0.1:3002`; `backend`/`java-validator`
   `/health` return 200.
 - **Security and availability fixes re-checked live** (details in
   [`security-model.md`](security-model.md)): spoofed `X-Forwarded-For` now ends in
@@ -28,15 +28,15 @@ On a running daemon:
 
 ## Re-verification checklist (requires a Docker daemon)
 
-Run these on a machine with a running daemon:
+Run these wherever the Docker CLI points at the daemon (local or remote):
 
 ```bash
 export TOKEN_VAULT_KEY="$(openssl rand -base64 32)"
 export SECUREDOC_API_KEY="$(openssl rand -hex 32)"
 docker compose up --build -d
-curl -fsS http://127.0.0.1:8000/health           # backend health
-curl -fsS http://127.0.0.1:8080/health           # Java validator health
-curl -fsS http://127.0.0.1:3000/ >/dev/null      # frontend served
+docker compose exec backend python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"  # backend health
+docker compose exec java-validator wget -q -O - http://127.0.0.1:8080/health >/dev/null   # Java validator health
+docker compose exec frontend wget -q -O - http://127.0.0.1/ >/dev/null                    # frontend served
 make smoke                                        # end-to-end API checks
 make audit                                        # audit log written
 docker compose down

@@ -166,19 +166,19 @@ export GEMINI_API_KEY="your-key"        # optional
 docker compose up --build
 ```
 
-Frontend: `http://localhost:3000` · Backend: `http://localhost:8000` · Validator:
+Frontend: `http://localhost:3002` · Backend: `http://localhost:8000` · Validator:
 `http://localhost:8080`.
 
-> **Port conflict?** The compose file maps the frontend to host port `3000`. If
-> that port is already taken (Gitea, Grafana, another dev server), `docker compose
-> up` fails with `bind: address already in use`. Remap the frontend to `3001` in
-> [`docker-compose.yml`](docker-compose.yml) and open `http://localhost:3001`:
+> **Port conflict?** The compose file maps the frontend to host port `3002`, since
+> `3000` and `3001` are commonly taken (Gitea, Grafana, uptime-kuma). If `3002` is
+> also in use, `docker compose up` fails with `bind: address already in use`; remap
+> the frontend in [`docker-compose.yml`](docker-compose.yml) and open the new port:
 >
 > ```yaml
-> ports: ["3001:80"]
+> ports: ["3003:80"]
 > ```
 
-The browser only ever talks to **nginx** on port 3000. nginx proxies `/api` and
+The browser only ever talks to **nginx** on port 3002. nginx proxies `/api` and
 `/health` to the backend and injects `X-API-Key` from `SECUREDOC_API_KEY` at
 request time, so the key is **never built into the frontend bundle**. Backend and
 validator are bound to `127.0.0.1` for local debugging only.
@@ -189,12 +189,17 @@ validator are bound to `127.0.0.1` for local debugging only.
 docker compose up --build -d
 curl -s http://localhost:8000/health                 # {"status":"ok",...}
 open http://localhost:8000/docs                       # OpenAPI docs
-open http://localhost:3000                            # dashboard
+open http://localhost:3002                            # dashboard
 make smoke                                            # end-to-end smoke test
 make eval-guard                                       # offline injection-guard evaluation
 make audit                                            # print the audit log
 docker compose down
 ```
+
+> Running the daemon on another host (via `DOCKER_HOST` or a `docker context` over
+> SSH)? `make smoke`, `make audit`, and `scripts/verify-all.sh` run their checks
+> **inside** the compose network, so they work even when the published ports are
+> not reachable from your laptop.
 
 `make smoke` checks health, public endpoints, the `401` on unauthenticated
 requests, successful safe processing, absence of raw PII in the response, and that

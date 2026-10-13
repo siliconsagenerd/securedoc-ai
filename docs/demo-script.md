@@ -2,7 +2,7 @@
 
 A walkthrough that shows validation, redaction, injection defence, and audit in
 one pass. Assumes the Docker stack (or local services) is running and the
-dashboard is open at `http://localhost:3000`.
+dashboard is open at `http://localhost:3002`.
 
 ## 0. Setup (before the audience arrives)
 

@@ -1,12 +1,11 @@
 # Prompt-injection guard evaluation
 
 > Guard hardening evaluation — after hardening
-> Run: 2026-10-13 17:44 UTC · threshold=40 · corpus=77 cases
+> Run: 2026-10-13 18:32 UTC · threshold=40 · corpus=77 cases
 
 ## Summary
 
-Evaluated on a labelled 77-case synthetic corpus at threshold 40 on 2026-10-13
-(17:44 UTC): 53 attack cases and 24 benign controls.
+Evaluated on a labelled 77-case synthetic corpus at threshold 40 on 2026-10-13 (18:32 UTC): 53 attack cases and 24 benign controls.
 
 | Metric | Value |
 | --- | --- |

@@ -85,21 +85,34 @@ def summarize(results: list[Case]) -> dict[str, Any]:
 def render_markdown(out: dict[str, Any], threshold: int, header: str) -> str:
     per_cat = out["per_category"]
     assert isinstance(per_cat, dict)
+    now = datetime.now(timezone.utc)
+    n_block, n_allow = out["n_block"], out["n_allow"]
+    benign_pass = n_allow - len(out["false_positives"])
     lines = [
         "# Prompt-injection guard evaluation",
         "",
         f"> {header}",
-        f"> Run: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} · "
+        f"> Run: {now.strftime('%Y-%m-%d %H:%M UTC')} · "
         f"threshold={threshold} · corpus={out['total']} cases",
         "",
         "## Summary",
         "",
+        f"Evaluated on a labelled {out['total']}-case synthetic corpus at threshold "
+        f"{threshold} on {now.strftime('%Y-%m-%d')} ({now.strftime('%H:%M UTC')}): "
+        f"{n_block} attack cases and {n_allow} benign controls.",
+        "",
         "| Metric | Value |",
         "| --- | --- |",
-        f"| Attack detection (recall) | **{out['recall']:.1f}%** "
-        f"({out['n_block'] - len(out['bypasses'])}/{out['n_block']} blocked) |",
-        f"| False-positive rate | **{out['fpr']:.1f}%** "
-        f"({len(out['false_positives'])}/{out['n_allow']} benign blocked) |",
+        f"| Injection recall (attacks blocked) | **{out['recall']:.1f}%** "
+        f"({n_block - len(out['bypasses'])}/{n_block}) |",
+        f"| Benign pass rate | **{benign_pass / n_allow * 100:.1f}%** "
+        f"({benign_pass}/{n_allow}) |",
+        f"| False-positive rate (benign blocked) | **{out['fpr']:.1f}%** "
+        f"({len(out['false_positives'])}/{n_allow}) |",
+        "",
+        "The threshold was selected on this same corpus, so these are initial baseline",
+        "figures rather than a production-scale benchmark. Threshold tuning should move to",
+        "a separate validation set before the numbers are relied on.",
         "",
         "## Per category",
         "",
