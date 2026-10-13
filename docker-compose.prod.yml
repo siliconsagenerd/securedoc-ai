@@ -20,6 +20,8 @@ services:
   java-validator:
     build: ./java-validator
     environment:
+      # MAX_UPLOAD_SIZE_MB is decimal megabytes; the `${...}000000` suffix appends
+      # six zeros to derive the byte count (5 -> 5,000,000 bytes).
       MAX_FILE_SIZE_BYTES: ${MAX_UPLOAD_SIZE_MB:-5}000000
     restart: unless-stopped
 
