@@ -28,7 +28,6 @@ flowchart LR
     B --> U
 ```
 
-```
 Raw values never reach the model — here is the flow in practice:
 
 ![SecureDoc AI — live demo](docs/assets/demo-flow.gif)
@@ -57,15 +56,6 @@ The threat model in [`docs/security-model.md`](docs/security-model.md) is inform
 by the **OWASP LLM Top 10** and considers **EU AI Act** risk-management themes.
 The mapping is non-exhaustive, states what is *not* mitigated, and is neither a
 certification nor a claim of compliance.
-
-## Why this project
-
-- **Defence in depth** — a metadata validator (Java), an injection guard, and PII
-  redaction are independent layers; each one can reject a request.
-- **Data minimisation by construction** — the model only ever sees placeholders
-  such as `[PII_EMAIL_ADDRESS_<id>]`; raw values never cross the process boundary.
-- **Polyglot, production-shaped** — FastAPI for the pipeline, Spring Boot for the
-  validation service, Vue for the UI, Docker Compose to run the whole stack.
 
 ## Features
 
@@ -290,7 +280,7 @@ Other statuses: **401** missing/invalid key, **413** too large (text or file),
 **415** unsupported/unreadable file, **429** rate limit exceeded (with
 `Retry-After`), **503** validator unavailable.
 
-### Other
+### Utility endpoints
 
 - `GET /health` — liveness probe with version.
 - `GET /api/version` — app name and version.
