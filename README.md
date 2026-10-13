@@ -38,12 +38,12 @@ Raw values never reach the model — here is the flow in practice:
 
 ![Dashboard](docs/assets/dashboard.png)
 
-## Why this project fits an AI & Security role (applied for ELO)
+## What this project covers
 
-This repository is a deliberately small, end-to-end system built to demonstrate
-the skills an *KI & Security* engineer needs in practice:
+This repository is a small end-to-end system that exercises the security
+concerns that come up when an application sends documents to an LLM:
 
-| ELO / AI-security domain                          | What this project shows                                          |
+| Security concern                                  | What this project shows                                          |
 | ------------------------------------------------- | ---------------------------------------------------------------- |
 | **Securing the AI supply chain**                  | LLM access handled like any other external dependency: an API key injected by the edge proxy, never shipped in client code, validated before use |
 | **Prompt-injection & evasion defence** (`OWASP LLM-01`) | Rule-based 0–100 risk scoring, category attribution, unicode/base64/zero-width evasion unmasking, hard threshold blocking |
