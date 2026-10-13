@@ -89,7 +89,7 @@ async function parseResult(res: Response): Promise<ProcessResult> {
 
 export async function checkHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/health`)
+    const res = await fetch(`${API_BASE}/api/version`)
     return res.ok
   } catch {
     return false

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "node scripts/check-no-secrets.mjs && vue-tsc --noEmit && vite build",
+    "verify:deploy": "node scripts/check-no-secrets.mjs",
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "capture": "playwright test --config playwright.capture.config.ts"
