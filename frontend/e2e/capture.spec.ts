@@ -15,7 +15,7 @@ test('capture: processed result', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Safe sample' }).click()
   await page.getByRole('button', { name: 'Process securely' }).click()
-  await expect(page.getByRole('heading', { name: 'Privacy shield' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Sanitized payload' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Model output' })).toBeVisible()
   mkdirSync(ASSETS, { recursive: true })
   await page.screenshot({ path: path.join(ASSETS, 'processed.png'), fullPage: true })
@@ -46,7 +46,7 @@ test('capture: safe flow frames (assembled into a GIF)', async ({ page }) => {
   await page.waitForTimeout(600)
   await page.screenshot({ path: path.join(frames, `f${String(n++).padStart(2, '0')}.png`), fullPage: false })
 
-  await expect(page.getByRole('heading', { name: 'Privacy shield' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Sanitized payload' })).toBeVisible()
   await page.screenshot({ path: path.join(frames, `f${String(n++).padStart(2, '0')}.png`), fullPage: false })
 
   await expect(page.getByRole('heading', { name: 'Model output' })).toBeVisible()

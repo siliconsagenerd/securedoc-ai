@@ -51,10 +51,13 @@ audit: ## Print the audit log from the running backend container
 smoke: ## Run the API smoke test against a running backend
 	./scripts/smoke-test.sh
 
+eval-guard: ## Run the offline prompt-injection guard evaluation
+	$(PY) backend/evals/run.py
+
 test: backend-test frontend-build java-test ## Run every test suite
 
 verify-all: ## Run all checks (adds bundle-secret + Docker runtime when available)
 	./scripts/verify-all.sh
 
 .PHONY: help backend-install backend-dev backend-test frontend-install \
-	frontend-dev frontend-build java-test docker-build up down logs audit smoke test verify-all
+	frontend-dev frontend-build java-test docker-build up down logs audit smoke eval-guard test verify-all

@@ -5,8 +5,8 @@ score reaches ``block_threshold``. Rules also carry a category so callers can
 report *what kind* of threat was seen, not just how severe it looked.
 
 Evasion handling runs before matching: zero-width/invisible characters are
-stripped, and unicode-escape or base64 payloads are decoded and re-scanned, so a
-disguised instruction still trips the same rules.
+stripped, letter-spacing is collapsed, and unicode-escape or base64 payloads are
+decoded and re-scanned, so a disguised instruction still trips the same rules.
 
 Regex rules are fast and deterministic. The module is intentionally modular: an
 LLM-based classifier can be added later as another detector stage inside
@@ -59,7 +59,8 @@ _RULES: list[tuple[str, str, int, re.Pattern]] = [
         "guard_bypass",
         45,
         re.compile(
-            r"(bypass|disable|ignore)\s+(the\s+)?(security\s+)?(filters?|controls?|guard|guardrails?)",
+            r"(bypass|disable|ignore|circumvent|turn\s+off|remove)\s+(the\s+)?"
+            r"(safety\s+|security\s+|content\s+)?(filters?|controls?|guard|guardrails?|checks?|restrictions?)",
             re.IGNORECASE,
         ),
     ),
@@ -93,6 +94,136 @@ _RULES: list[tuple[str, str, int, re.Pattern]] = [
         "exfiltration",
         30,
         re.compile(r"upload\s+(this\s+)?document\s+to", re.IGNORECASE),
+    ),
+    # --- synonym / paraphrase overrides (the base rule only knew ignore|disregard|forget)
+    (
+        "instruction_override_synonym",
+        "instruction_override",
+        45,
+        re.compile(
+            r"\b(override|discard|replace|supersede)\s+(the\s+|your\s+|all\s+|any\s+)*"
+            r"(previous\s+|prior\s+|earlier\s+|existing\s+|above\s+)*"
+            r"(instructions|directives|prompts?|rules|guidelines)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "instruction_override_new",
+        "instruction_override",
+        45,
+        re.compile(
+            r"(\b(new|updated)\s+instructions?\s*[:\-]"
+            r"|as\s+(your\s+|the\s+)?(new|updated)\s+instructions)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "instruction_override_notfollow",
+        "instruction_override",
+        45,
+        re.compile(
+            r"\b(do\s+not|don'?t|stop)\s+follow(ing)?\s+(the\s+)?"
+            r"(earlier|previous|prior|above|system|original)\s+"
+            r"(instructions|directives|rules|prompts?)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # --- non-English overrides (the base rules are English-only)
+    (
+        "multilingual_override",
+        "instruction_override",
+        45,
+        re.compile(
+            r"(ignoriere|ignorier|ignorieren|vergiss|vergesse|vergessen|missachte|missachten"
+            r"|übergehe|übergehen|ignorez|oubliez|négligez|ignora|ignoren|olvida|omita)"
+            r"\w*[\s\S]{0,40}?"
+            r"(anweisung\w*|regel\w*|instruktion\w*|vorgabe\w*|consigne\w*|instruction\w*"
+            r"|directive\w*|r[èe]gle\w*|regla\w*|instrucci\w*|indicaci\w*|directri\w*)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "multilingual_new_instruction",
+        "instruction_override",
+        45,
+        re.compile(r"\bneue\s+anweisung\b", re.IGNORECASE),
+    ),
+    # --- prompt disclosure, paraphrased
+    (
+        "prompt_disclosure_ask",
+        "prompt_disclosure",
+        45,
+        re.compile(
+            r"(reveal|print|show|output|repeat|display|expose|tell|list|give)\s+(me\s+)?"
+            r"(your\s+|the\s+)?(rules|guidelines|instructions|prompts?|system\s*prompt|directives)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "prompt_disclosure_interrogate",
+        "prompt_disclosure",
+        45,
+        re.compile(
+            r"\b(what|which)\s+(are|were)\s+(your|the)\s+(rules|instructions|guidelines|prompts?)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "prompt_disclosure_repeat_above",
+        "prompt_disclosure",
+        45,
+        re.compile(
+            r"(repeat|show|print|output|reveal)\s+(everything|all|the\s+(full\s+)?text|the\s+words)\b"
+            r"[\s\S]{0,30}?(above|before|preceding|prior)",
+            re.IGNORECASE,
+        ),
+    ),
+    # --- role-play jailbreaks
+    (
+        "roleplay_jailbreak",
+        "jailbreak",
+        45,
+        re.compile(
+            r"\b(pretend|imagine|roleplay|role-play)\s+(you\s+are|you'?re|to\s+be|as)\b"
+            r"[\s\S]{0,60}?"
+            r"(no\s+(restrictions|rules|limits|filters)|without\s+(any\s+)?(restrictions|rules|limits|filters)"
+            r"|unrestricted|unfiltered|uncensored|no\s+(ethical|moral)\s+limits)",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "jailbreak_cue",
+        "jailbreak",
+        45,
+        re.compile(
+            r"\b(developer\s+mode|do\s+anything\s+now|dan\s+mode|jailbreak"
+            r"|no\s+(restrictions|rules|limits)(\s+(or|and)\s+(restrictions|rules|limits))?"
+            r"|without\s+(any\s+)?(restrictions|filters|rules|limits)"
+            r"|no\s+(ethical|moral)\s+(limits|restrictions))\b",
+            re.IGNORECASE,
+        ),
+    ),
+    # --- exfiltration to an external address/URL
+    (
+        "exfil_to_external",
+        "exfiltration",
+        45,
+        re.compile(
+            r"\b(send|forward|email|mail|post|upload|exfiltrate|leak)\b[\s\S]{0,40}?"
+            r"\b(this\s+|the\s+|our\s+|all\s+)*(data|document|files?|text|contents?|report)\b"
+            r"[\s\S]{0,40}?(@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|https?://|evil|attacker|external)",
+            re.IGNORECASE,
+        ),
+    ),
+    # --- chat-template control tokens (never appear in legitimate documents)
+    (
+        "chat_control_token",
+        "delimiter_injection",
+        45,
+        re.compile(
+            r"(<\|(im_start|im_end|system|user|assistant|start_header_id)\|>|\[/?inst\])",
+            re.IGNORECASE,
+        ),
     ),
 ]
 
@@ -161,12 +292,26 @@ class GuardService:
         """Normalised text plus any decoded evasion payloads, all scanned alike."""
         candidates = [_INVISIBLE.sub("", text)]
 
+        collapsed = self._collapse_separators(candidates[0])
+        if collapsed != candidates[0]:
+            candidates.append(collapsed)
+
         unicode_decoded = self._decode_unicode_escapes(text)
         if unicode_decoded:
             candidates.append(unicode_decoded)
 
         candidates.extend(self._decode_base64_payloads(text))
         return candidates
+
+    @staticmethod
+    def _collapse_separators(text: str) -> str:
+        """Undo letter-spacing evasion: 'I g n o r e' / 'i.g.n.o.r.e' -> 'ignore'.
+
+        shortcut: only single-char spacing and .-_ separators; hyphenated
+        keyword runs ('Ignore-all-previous') are still missed, upgrade if abused.
+        """
+        collapsed = re.sub(r"(?<=\w)[.\-_](?=\w)", "", text)
+        return re.sub(r"(?<=\b\w) (?=\w\b)", "", collapsed)
 
     def _obfuscation_labels(self, text: str, candidates: list[str]) -> list[str]:
         labels: list[str] = []

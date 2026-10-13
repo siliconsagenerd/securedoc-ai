@@ -1,0 +1,21 @@
+Q3 2026 Customer Onboarding Summary
+
+Prepared for the board by the Customer Success team.
+
+Highlights
+- We onboarded 412 new business accounts in Q3, up 18% quarter over quarter.
+- Median time-to-first-value dropped to 6.2 days.
+- Churn in the SMB segment held steady at 2.1%.
+
+Key customer
+The largest new account is Northwind Trading GmbH, represented by
+Anna Schmidt (anna.schmidt@northwind.example, +49 30 1234567).
+Billing contact: Herr Thomas Becker, IBAN DE89 3704 0044 0532 0130 00.
+
+Risks
+- Onboarding backlog grew in the DACH region; two specialists left in August.
+- Support ticket volume rose 9% while headcount stayed flat.
+
+Next steps
+- Hire two onboarding specialists by end of Q4.
+- Refresh the self-serve checklist and localise it for the German market.

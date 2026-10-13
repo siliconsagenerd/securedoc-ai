@@ -33,6 +33,21 @@ def test_process_document_rejects_wrong_api_key(client):
     assert response.status_code == 401
 
 
+def test_process_document_rejects_non_ascii_api_key(client):
+    """A malformed (non-ASCII) key must fail closed with 401, not raise a 500.
+
+    Sent as raw bytes: strict ASCII header validation would otherwise reject it
+    before it reached the server, but real HTTP clients can put non-ASCII bytes
+    in a header value.
+    """
+    response = client.post(
+        "/api/process-document",
+        headers=[(b"X-API-Key", b"caf\xc3\xa9")],
+        json={"text": "Summarize this", "task": "summarize"},
+    )
+    assert response.status_code == 401
+
+
 def test_process_document_blocks_injection(client):
     response = client.post(
         "/api/process-document",

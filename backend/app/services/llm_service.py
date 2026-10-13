@@ -37,6 +37,10 @@ class LLMError(RuntimeError):
     """Raised when the LLM cannot be reached or returns an error."""
 
 
+# Hard upper bound on a single provider call, in milliseconds.
+_REQUEST_TIMEOUT_MS = 60_000
+
+
 class LLMService:
     def __init__(self, model: str | None = None) -> None:
         self.model = model or settings.gemini_model
@@ -50,7 +54,17 @@ class LLMService:
         if not self.available:
             raise LLMError("Gemini API key is not configured")
         if self._client is None:
-            self._client = genai.Client(api_key=settings.gemini_api_key)
+            # Without these bounds the SDK retries 5xx/429 with exponential
+            # backoff for minutes, starving the HTTP request (nginx then 504s).
+            # shortcut: 60s cap fails slowly-responding calls to the graceful
+            # fallback instead of hanging; raise if a slower model is adopted.
+            self._client = genai.Client(
+                api_key=settings.gemini_api_key,
+                http_options=types.HttpOptions(
+                    timeout=_REQUEST_TIMEOUT_MS,
+                    retry_options=types.HttpRetryOptions(attempts=1),
+                ),
+            )
         return self._client
 
     def _generate(self, sanitized_text: str, instruction: str) -> str:

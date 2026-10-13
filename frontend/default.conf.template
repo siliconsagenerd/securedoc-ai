@@ -10,9 +10,19 @@ server {
     # envsubst entrypoint). It never reaches the browser.
     location /api/ {
         proxy_pass http://backend:8000;
+        # The LLM call can legitimately take tens of seconds; nginx's 60s
+        # default read timeout would 504 the browser before the backend
+        # replies. The backend caps its own provider call at 60s, so 90s here
+        # lets the graceful response (or fallback) reach the client.
+        proxy_read_timeout 90s;
+        proxy_send_timeout 90s;
+        proxy_connect_timeout 10s;
         proxy_set_header Host $host;
+        # $remote_addr (not $proxy_add_x_forwarded_for): the client's own
+        # X-Forwarded-For must not be appended, or it becomes spoofable and the
+        # backend rate limiter could be bypassed by rotating the header.
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-API-Key ${SECUREDOC_API_KEY};
     }
 

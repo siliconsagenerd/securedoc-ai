@@ -25,7 +25,10 @@ async def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
             detail="Authentication is not configured on the server",
         )
 
-    if not x_api_key or not hmac.compare_digest(x_api_key, expected):
+    # Compare as bytes: compare_digest raises TypeError on non-ASCII str, which
+    # would turn a malformed key into a 500 instead of a clean 401.
+    supplied = (x_api_key or "").encode("utf-8")
+    if not x_api_key or not hmac.compare_digest(supplied, expected.encode("utf-8")):
         logger.warning("Rejected request with missing or invalid API key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

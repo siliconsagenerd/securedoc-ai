@@ -55,3 +55,55 @@ def test_oversized_upload_rejected(monkeypatch, client):
         assert response.status_code == 413
     finally:
         rate_limiter.reset()
+
+
+def test_rotating_x_forwarded_for_prefix_cannot_bypass_limit(monkeypatch, client):
+    """A client-controlled X-Forwarded-For prefix must not mint new buckets.
+
+    Our nginx appends the real peer, so only the right-most entry is trusted.
+    Rotating the spoofable prefix must still hit the one shared bucket.
+    """
+    monkeypatch.setattr(rate_limiter, "limit", 2)
+    rate_limiter.reset()
+
+    try:
+        for i in range(2):
+            response = client.post(
+                "/api/process-document",
+                json=_body("one"),
+                headers={"X-Forwarded-For": f"10.0.0.{i}, 203.0.113.9"},
+            )
+            assert response.status_code == 200
+
+        blocked = client.post(
+            "/api/process-document",
+            json=_body("three"),
+            headers={"X-Forwarded-For": "10.0.0.99, 203.0.113.9"},
+        )
+        assert blocked.status_code == 429
+    finally:
+        rate_limiter.reset()
+
+
+def test_x_real_ip_is_authoritative_over_x_forwarded_for(monkeypatch, client):
+    """X-Real-IP (set by our proxy) identifies the caller even if XFF is rotated."""
+    monkeypatch.setattr(rate_limiter, "limit", 2)
+    rate_limiter.reset()
+
+    try:
+        for i in range(2):
+            response = client.post(
+                "/api/process-document",
+                json=_body("one"),
+                headers={"X-Real-IP": "203.0.113.9", "X-Forwarded-For": f"10.0.0.{i}"},
+            )
+            assert response.status_code == 200
+
+        blocked = client.post(
+            "/api/process-document",
+            json=_body("three"),
+            headers={"X-Real-IP": "203.0.113.9", "X-Forwarded-For": "10.0.0.99"},
+        )
+        assert blocked.status_code == 429
+    finally:
+        rate_limiter.reset()

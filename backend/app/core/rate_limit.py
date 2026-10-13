@@ -54,12 +54,17 @@ class RateLimiter:
 
 
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    # Identity must come from a header the client cannot set. Our nginx always
+    # overwrites X-Real-IP with $remote_addr, so trust it first. X-Forwarded-For
+    # is client-appendable, so only its right-most (proxy-added) entry is used —
+    # never the left-most, which the caller controls and could rotate to defeat
+    # the limit. Between the two, a spoofed XFF cannot mint new buckets.
     real = request.headers.get("x-real-ip")
     if real:
-        return real.strip()
+        return real.split(",")[-1].strip()
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
     return request.client.host if request.client else "unknown"
 
 

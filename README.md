@@ -75,7 +75,9 @@ is *not* mitigated, so the threat model is honest rather than decorative.
 - **Prompt-injection defence** — a rule engine scores each request **0–100** with
   named categories, blocks at a configurable threshold, and unmasks evasion
   attempts (zero-width characters, unicode escapes, base64 payloads)
-  (`services/guard_service.py`).
+  (`services/guard_service.py`). Measured on a labelled 77-case corpus
+  (`make eval-guard`): **98.1% detection / 8.3% false positives** — see
+  [`docs/guard-eval.md`](docs/guard-eval.md).
 - **PII redaction** — Microsoft Presidio detects `PERSON`, `EMAIL_ADDRESS`,
   `PHONE_NUMBER`, `CREDIT_CARD`, `IBAN_CODE` (plus a custom German IBAN pattern);
   each entity becomes a `[PII_TYPE_<id>]` placeholder.
@@ -175,6 +177,7 @@ curl -s http://localhost:8000/health                 # {"status":"ok",...}
 open http://localhost:8000/docs                       # OpenAPI docs
 open http://localhost:3000                            # dashboard
 make smoke                                            # end-to-end smoke test
+make eval-guard                                       # offline injection-guard evaluation
 make audit                                            # print the audit log
 docker compose down
 ```

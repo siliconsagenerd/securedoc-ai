@@ -12,6 +12,29 @@ Recorded on 2026-10-11 (macOS, Docker CLI 29.8.1, Docker Compose v5.5.1).
 | Compose config | `docker compose config` | pass (with dummy env) |
 | Docker runtime | `docker compose up --build -d` | **NOT RUN — daemon unavailable** |
 
+## Update 2026-10-12 — Docker runtime verified + security fixes
+
+The 2026-10-11 table above is the pre-Docker baseline. On a running daemon:
+
+- Backend tests: **58 passed** (was 38; +20 across rate-limit/auth regressions,
+  the guard red-team suite, and the LLM client-bound guard).
+- `docker compose up -d --build`: backend, frontend, and java-validator images
+  build; backend waits for a healthy java-validator; all three containers healthy.
+- Frontend serves the SPA at `http://127.0.0.1:3000`; `backend`/`java-validator`
+  `/health` return 200.
+- **Security fixes verified live** (see `docs/security-model.md`):
+  - Rotating `X-Forwarded-For` through nginx → `20×400` then `429`. Previously
+    `25×400` with no `429`: the rate limit was bypassable.
+  - Non-ASCII `X-API-Key` → `401`. Previously `500` (`hmac.compare_digest`
+    raised `TypeError` on non-ASCII).
+- **Availability fix verified live** (see `docs/security-model.md`): uploading a
+  document through nginx (`:3000`) returned `504 Gateway Time-out` at 60s. The
+  Gemini SDK was retrying a provider `503` with backoff for minutes while
+  nginx's default 60s read timeout fired. With the LLM client bounded (60s,
+  one attempt) and nginx at 90s, the same upload returns `200` within the bound
+  — the graceful fallback path when the provider was unavailable, the summary
+  when it was healthy.
+
 ## Why Docker runtime was not verified
 
 The Docker daemon is not running in the environment where this work was done

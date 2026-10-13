@@ -165,227 +165,515 @@ async function submit() {
 </script>
 
 <template>
-  <header class="topbar">
-    <div>
-      <h1>SecureDoc AI</h1>
-      <p class="muted">Security layer for LLM document processing — PII is redacted before any model sees it.</p>
-    </div>
-    <span class="status" :class="backendOnline ? 'online' : 'offline'">
-      <i class="dot" />{{ backendOnline ? 'API online' : 'API offline' }}
-    </span>
-  </header>
-
-  <section class="card">
-    <div class="controls">
-      <label>
-        Task
-        <select v-model="task">
-          <option value="summarize">Summarize</option>
-          <option value="extract_fields">Extract fields</option>
-          <option value="classify_document">Classify document</option>
-        </select>
-      </label>
-      <div class="samples">
-        <button class="ghost" type="button" @click="loadSample('safe')">Safe sample</button>
-        <button class="ghost" type="button" @click="loadSample('attack')">Injection sample</button>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l7 3v5.4c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z" />
+            <path d="M9.4 12.1l1.9 1.9 3.4-3.8" />
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1>SecureDoc <span class="tag">AI</span></h1>
+          <p>Redacts personal data and stops prompt injection before any model sees the document.</p>
+        </div>
       </div>
-    </div>
 
-    <textarea
-      v-model="text"
-      :disabled="!!selectedFile"
-      rows="9"
-      placeholder="Paste a document containing sensitive data…"
-    ></textarea>
-
-    <div class="upload">
-      <span class="or">or upload a document</span>
-      <label class="filebtn">
-        Choose file
-        <input type="file" accept=".txt,.md,.pdf,.docx" @change="onFileChange" />
-      </label>
-      <span v-if="selectedFile" class="chip">
-        {{ selectedFile.name }}
-        <button type="button" class="x" @click="clearFile">×</button>
+      <span class="pill" :class="backendOnline ? 'online' : 'offline'">
+        <span class="beacon" aria-hidden="true"></span>
+        {{ backendOnline ? 'API online' : 'API offline' }}
       </span>
-      <span class="muted small">.txt · .md · .pdf · .docx · max 5 MB — never stored</span>
-    </div>
+    </header>
 
-    <div class="actions">
-      <button class="primary" type="button" :disabled="!canSubmit()" @click="submit">
-        {{ loading ? 'Processing…' : selectedFile ? 'Upload & process' : 'Process securely' }}
-      </button>
-      <button class="ghost" type="button" :disabled="loading" @click="clearAll">Clear</button>
-    </div>
-  </section>
+    <main class="workspace">
+      <div class="column">
+        <section class="blk input-panel" :class="{ 'is-loading': loading }">
+          <div class="blk-head">
+            <span class="idx mono" aria-hidden="true">01</span>
+            <h2>Document intake</h2>
+            <div class="samples">
+              <button class="chipbtn" type="button" @click="loadSample('safe')">Safe sample</button>
+              <button class="chipbtn" type="button" @click="loadSample('attack')">Injection sample</button>
+            </div>
+          </div>
 
-  <section class="card pipeline">
-    <h2>Pipeline</h2>
-    <ol class="steps">
-      <li v-for="step in pipeline" :key="step.label" :class="step.state">
-        <span class="mark" />
-        {{ step.label }}
-      </li>
-    </ol>
-  </section>
+          <div class="segmented" role="group" aria-label="Processing task">
+            <button
+              type="button"
+              :class="{ 'is-on': task === 'summarize' }"
+              :aria-pressed="task === 'summarize'"
+              @click="task = 'summarize'"
+            >
+              Summarize
+            </button>
+            <button
+              type="button"
+              :class="{ 'is-on': task === 'extract_fields' }"
+              :aria-pressed="task === 'extract_fields'"
+              @click="task = 'extract_fields'"
+            >
+              Extract fields
+            </button>
+            <button
+              type="button"
+              :class="{ 'is-on': task === 'classify_document' }"
+              :aria-pressed="task === 'classify_document'"
+              @click="task = 'classify_document'"
+            >
+              Classify
+            </button>
+          </div>
 
-  <section v-if="blocked" class="card blocked" role="alert">
-    <h2>Request blocked</h2>
-    <p>{{ blocked.message }}</p>
-    <p class="muted">
-      Risk: <strong>{{ blocked.risk_level }}</strong>
-      <template v-if="typeof blocked.score === 'number'"> · score {{ blocked.score }}/100</template>
-      · audit {{ blocked.audit_event_id }}
-    </p>
-    <div v-if="blocked.categories?.length" class="rows">
-      <span class="muted small">Categories</span>
-      <ul class="badges">
-        <li v-for="c in blocked.categories" :key="c" class="badge warn">{{ c }}</li>
-      </ul>
-    </div>
-    <div class="rows">
-      <span class="muted small">Triggers</span>
-      <ul class="badges">
-        <li v-for="reason in blocked.reasons" :key="reason" class="badge">{{ reason }}</li>
-      </ul>
-    </div>
-    <p class="muted small">Nothing was sent to the model and no file was stored.</p>
-  </section>
+          <textarea
+            v-model="text"
+            :disabled="!!selectedFile"
+            rows="9"
+            placeholder="Paste a document containing sensitive data…"
+          ></textarea>
 
-  <p v-if="error" class="alert" role="alert">{{ error }}</p>
+          <div class="intake-foot">
+            <label class="filebtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 15V4" />
+                <path d="M8 8l4-4 4 4" />
+                <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+              </svg>
+              Attach file
+              <input type="file" accept=".txt,.md,.pdf,.docx" @change="onFileChange" />
+            </label>
+            <span v-if="selectedFile" class="filechip">
+              <span class="name">{{ selectedFile.name }}</span>
+              <button class="iconbtn" type="button" aria-label="Remove file" @click="clearFile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </span>
+            <span class="hint">.txt · .md · .pdf · .docx · 5 MB max — never stored</span>
+          </div>
 
-  <section v-if="result" class="grid">
-    <div class="card">
-      <div class="cardhead">
-        <h2>Privacy shield</h2>
-        <button class="ghost small" type="button" @click="copy('sanitized', result.sanitized_preview)">
-          {{ copied === 'sanitized' ? 'Copied' : 'Copy' }}
-        </button>
+          <div class="actions">
+            <button class="btn primary" type="button" :disabled="!canSubmit()" @click="submit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3l7 3v5.4c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z" />
+              </svg>
+              {{ loading ? 'Processing…' : selectedFile ? 'Upload & process' : 'Process securely' }}
+            </button>
+            <button class="btn ghost" type="button" :disabled="loading" @click="clearAll">Clear</button>
+          </div>
+        </section>
+
+        <section class="blk">
+          <div class="blk-head">
+            <span class="idx mono" aria-hidden="true">02</span>
+            <h2>Processing pipeline</h2>
+          </div>
+          <ol class="rail">
+            <li v-for="(step, i) in pipeline" :key="step.label" :class="step.state">
+              <span class="node" aria-hidden="true">
+                <svg v-if="step.state === 'done'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 12.5l5 5L20 6.5" />
+                </svg>
+                <svg
+                  v-else-if="step.state === 'blocked' || step.state === 'error'"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 3.6l8.4 14.8H3.6z" />
+                  <path d="M12 10v3.6" />
+                  <path d="M12 16.4h.01" />
+                </svg>
+                <span v-else class="pip" />
+              </span>
+              <span class="lbl">{{ step.label }}</span>
+              <span v-if="i < pipeline.length - 1" class="link" aria-hidden="true"></span>
+            </li>
+          </ol>
+        </section>
+
+        <section v-if="blocked" class="blk alert-panel" role="alert">
+          <div class="alert-head">
+            <span class="ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3.6l8.4 14.8H3.6z" />
+                <path d="M12 10v3.6" />
+                <path d="M12 16.4h.01" />
+              </svg>
+            </span>
+            <h2>Request blocked</h2>
+            <span class="risk-chip" :class="blocked.risk_level">{{ blocked.risk_level }} risk</span>
+          </div>
+
+          <p class="msg">{{ blocked.message }}</p>
+
+          <div v-if="typeof blocked.score === 'number'" class="meter" aria-hidden="true">
+            <i v-for="n in 10" :key="n" :class="{ on: n <= Math.round((blocked.score as number) / 10) }" />
+          </div>
+          <p v-if="typeof blocked.score === 'number'" class="mono scoreline">
+            Risk score {{ blocked.score }}/100 · audit {{ blocked.audit_event_id }}
+          </p>
+          <p v-else class="mono scoreline">audit {{ blocked.audit_event_id }}</p>
+
+          <div v-if="blocked.categories?.length" class="rows">
+            <span class="rows-label">Categories</span>
+            <ul class="badges">
+              <li v-for="c in blocked.categories" :key="c" class="badge warn"><i class="bar" aria-hidden="true"></i>{{ c }}</li>
+            </ul>
+          </div>
+          <div class="rows">
+            <span class="rows-label">Triggers</span>
+            <ul class="badges">
+              <li v-for="reason in blocked.reasons" :key="reason" class="badge"><i class="bar" aria-hidden="true"></i>{{ reason }}</li>
+            </ul>
+          </div>
+          <p class="foot">Nothing was sent to the model and no file was stored.</p>
+        </section>
+
+        <p v-if="error" class="inline-alert" role="alert">{{ error }}</p>
+
+        <section v-if="result" class="blk results">
+          <article class="panel">
+            <div class="blk-head">
+              <h2>Sanitized payload</h2>
+              <button class="copy" :class="{ done: copied === 'sanitized' }" type="button" @click="copy('sanitized', result.sanitized_preview)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="10" height="10" rx="2" />
+                  <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+                </svg>
+                {{ copied === 'sanitized' ? 'Copied' : 'Copy' }}
+              </button>
+            </div>
+            <p class="stat">
+              <b class="mono">{{ result.pii.entity_count }}</b> {{ result.pii.entity_count === 1 ? 'entity' : 'entities' }} redacted before transmission
+            </p>
+            <ul class="badges">
+              <li v-for="type in result.pii.entity_types" :key="type" class="badge"><i class="bar" aria-hidden="true"></i>{{ type }}</li>
+            </ul>
+            <pre>{{ result.sanitized_preview }}</pre>
+          </article>
+
+          <article class="panel">
+            <div class="blk-head">
+              <h2>Model output</h2>
+              <button class="copy" :class="{ done: copied === 'output' }" type="button" @click="copy('output', result.llm_output)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="10" height="10" rx="2" />
+                  <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+                </svg>
+                {{ copied === 'output' ? 'Copied' : 'Copy' }}
+              </button>
+            </div>
+            <p class="meta">
+              <span v-if="result.filename" class="mono">{{ result.filename }}</span>
+              <span class="mono">{{ result.task }}</span>
+              <span class="mono">{{ result.latency_ms }} ms</span>
+            </p>
+            <pre>{{ result.llm_output }}</pre>
+            <p class="foot mono">audit event {{ result.audit_event_id }}</p>
+          </article>
+        </section>
       </div>
-      <p class="muted">{{ result.pii.entity_count }} entit(y/ies) redacted before transmission</p>
-      <ul class="badges">
-        <li v-for="type in result.pii.entity_types" :key="type" class="badge">{{ type }}</li>
-      </ul>
-      <h3>Sanitized payload sent to the model</h3>
-      <pre>{{ result.sanitized_preview }}</pre>
-    </div>
 
-    <div class="card">
-      <div class="cardhead">
-        <h2>Model output</h2>
-        <button class="ghost small" type="button" @click="copy('output', result.llm_output)">
-          {{ copied === 'output' ? 'Copied' : 'Copy' }}
-        </button>
-      </div>
-      <p class="muted">
-        <template v-if="result.filename">File: {{ result.filename }} · </template>
-        Task: {{ result.task }} · {{ result.latency_ms }} ms
-      </p>
-      <pre>{{ result.llm_output }}</pre>
-      <p class="muted audit">Audit event: {{ result.audit_event_id }}</p>
-    </div>
-  </section>
-
-  <section class="card">
-    <h2>Security telemetry</h2>
-    <p v-if="!events.length" class="muted">No events this session yet.</p>
-    <ul class="events">
-      <li v-for="event in events" :key="event.id" :class="event.kind">
-        <span class="time">{{ event.time }}</span>
-        <strong>{{ event.label }}</strong>
-        <span class="muted">{{ event.detail }}</span>
-      </li>
-    </ul>
-  </section>
+      <aside class="column side">
+        <section class="blk telemetry">
+          <div class="blk-head">
+            <h2>Live telemetry</h2>
+            <span class="mono count">{{ events.length }} event{{ events.length === 1 ? '' : 's' }}</span>
+          </div>
+          <p v-if="!events.length" class="empty">
+            No events yet. Process a document to watch the security pipeline run in real time.
+          </p>
+          <ul v-else class="log">
+            <li v-for="event in events" :key="event.id" :class="event.kind">
+              <span class="lvl mono">{{ event.kind === 'processed' ? 'PROC' : event.kind === 'blocked' ? 'BLOCK' : 'ERR' }}</span>
+              <div class="log-body">
+                <strong>{{ event.label }}</strong>
+                <span class="log-detail mono">{{ event.detail }}</span>
+              </div>
+              <time class="mono">{{ event.time }}</time>
+            </li>
+          </ul>
+        </section>
+      </aside>
+    </main>
+  </div>
 </template>
 
 <style scoped>
-.topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+.shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
 }
-h1 {
-  margin: 0 0 4px;
-  font-size: 1.6rem;
-}
-h2 {
-  margin: 0 0 8px;
-  font-size: 1.1rem;
-}
-h3 {
-  margin: 16px 0 6px;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-.muted {
-  color: var(--muted);
-  font-size: 0.88rem;
-}
-.small {
-  font-size: 0.78rem;
-}
-section.card {
-  margin-bottom: 18px;
-}
-.controls,
-.actions {
+
+/* Masthead */
+.masthead {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-.controls {
   justify-content: space-between;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px 2px 20px;
+  border-bottom: 1px solid var(--line-2);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.mark {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+}
+.mark svg {
+  width: 21px;
+  height: 21px;
+}
+.brand-text h1 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.brand-text .tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 3px 5px 2px;
+}
+.brand-text p {
+  margin: 3px 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.beacon {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--text-3);
+}
+.pill.online {
+  color: var(--ok);
+  border-color: #bfd9c6;
+}
+.pill.online .beacon {
+  background: var(--ok);
+}
+.pill.offline {
+  color: var(--danger);
+  border-color: #e6bcb5;
+}
+.pill.offline .beacon {
+  background: var(--danger);
+}
+
+/* Layout — two sheets, hairline-divided inside */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 16px;
+}
+.column {
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.column > .blk {
+  padding: 20px 22px;
+}
+.column > .blk + .blk:not(.inline-alert) {
+  border-top: 1px solid var(--line);
+}
+
+/* Section head */
+.blk-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.blk-head .idx {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+.blk-head h2 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.blk-head .samples,
+.blk-head .copy,
+.blk-head .count {
+  margin-left: auto;
+}
+
+/* Intake */
+.input-panel {
+  position: relative;
+}
+.input-panel.is-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 34%;
+  background: var(--accent);
+  animation: sweep 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 .samples {
   display: flex;
   gap: 8px;
 }
-.actions {
-  margin-top: 12px;
+.chipbtn {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.01em;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 5px 9px;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
 }
-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  color: var(--muted);
+.chipbtn:hover {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  margin-bottom: 14px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.segmented button {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  padding: 6px 13px;
+  border-radius: var(--r-sm);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.segmented button:hover {
+  color: var(--text);
+}
+.segmented button.is-on {
+  color: var(--accent-ink);
+  background: var(--accent);
 }
 textarea {
+  display: block;
   width: 100%;
+  min-height: 200px;
   resize: vertical;
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  line-height: 1.62;
+  color: var(--text);
+  background: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: 14px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+textarea::placeholder {
+  color: var(--text-3);
+}
+textarea:hover {
+  border-color: var(--text-3);
+}
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(20, 22, 26, 0.1);
 }
 textarea:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-.upload {
+.intake-foot {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
-}
-.or {
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  gap: 12px;
+  margin-top: 12px;
 }
 .filebtn {
   position: relative;
   overflow: hidden;
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-  padding: 8px 14px;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+.filebtn:hover {
+  border-color: var(--accent);
   color: var(--text);
-  font-size: 0.85rem;
+}
+.filebtn svg {
+  width: 15px;
+  height: 15px;
 }
 .filebtn input {
   position: absolute;
@@ -393,127 +681,486 @@ textarea:disabled {
   opacity: 0;
   cursor: pointer;
 }
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(79, 140, 255, 0.15);
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 0.8rem;
-}
-.chip .x {
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-}
-button.primary {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-weight: 600;
-}
-button.primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-button.ghost {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 14px;
-}
-button.ghost.small {
-  padding: 4px 10px;
-  font-size: 0.78rem;
-}
-.status {
+.filechip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
+  max-width: 320px;
+  padding: 5px 5px 5px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+}
+.filechip .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--muted);
+.iconbtn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-3);
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
-.status.online {
-  color: var(--ok);
-}
-.status.online .dot {
-  background: var(--ok);
-}
-.status.offline {
+.iconbtn:hover {
+  background: rgba(189, 44, 26, 0.1);
   color: var(--danger);
 }
-.status.offline .dot {
-  background: var(--danger);
+.iconbtn svg {
+  width: 13px;
+  height: 13px;
 }
-.pipeline .steps {
+.hint {
+  color: var(--text-3);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+}
+.actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  margin-top: 16px;
 }
-.steps li {
+.btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.85rem;
+  gap: 9px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.06s;
 }
-.steps .mark {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--border);
+.btn svg {
+  width: 15px;
+  height: 15px;
 }
-.steps li.active {
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn.primary:hover:not(:disabled) {
+  background: #2b2f36;
+}
+.btn.primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.btn.ghost {
+  background: transparent;
+  border-color: var(--line-2);
+  color: var(--text-2);
+}
+.btn.ghost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.btn.ghost:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Pipeline rail */
+.rail {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 2px 0;
+}
+.rail li {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.rail .node {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text-3);
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    color 0.18s;
+}
+.rail .node svg {
+  width: 14px;
+  height: 14px;
+}
+.rail .pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--text-3);
+}
+.rail .lbl {
+  margin-left: 9px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-3);
+  white-space: nowrap;
+  transition: color 0.18s;
+}
+.rail .link {
+  flex: 1;
+  height: 1px;
+  margin: 0 12px;
+  background: var(--line);
+}
+.rail li.active .node {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+.rail li.active .pip {
+  background: var(--surface);
+  animation: pulse 1s ease-in-out infinite;
+}
+.rail li.active .lbl {
+  color: var(--text);
+}
+.rail li.done .node {
+  border-color: #bfd9c6;
+  color: var(--ok);
+  background: #ecf5ef;
+}
+.rail li.done .lbl {
+  color: var(--ok);
+}
+.rail li.done .link {
+  background: #bfd9c6;
+}
+.rail li.blocked .node,
+.rail li.error .node {
+  border-color: #e6bcb5;
+  color: var(--danger);
+  background: #fbeae6;
+}
+.rail li.blocked .lbl,
+.rail li.error .lbl {
+  color: var(--danger);
+}
+.rail li.skipped {
+  opacity: 0.45;
+}
+
+/* Blocked alert */
+.alert-panel {
+  background: #fdf4f2;
+}
+.alert-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 10px;
+}
+.alert-head .ico {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: #fbeae6;
+  border: 1px solid #e6bcb5;
+  color: var(--danger);
+}
+.alert-head .ico svg {
+  width: 17px;
+  height: 17px;
+}
+.alert-head h2 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.risk-chip {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  color: var(--warn);
+  background: #f7f0dd;
+  border: 1px solid #e6d9b4;
+}
+.risk-chip.high {
+  color: var(--danger);
+  background: #fbeae6;
+  border-color: #e6bcb5;
+}
+.alert-panel .msg {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-md);
+}
+.meter {
+  display: flex;
+  gap: 3px;
+  margin-top: 14px;
+}
+.meter i {
+  flex: 1;
+  height: 5px;
+  border-radius: 1px;
+  background: #e8d7d3;
+}
+.meter i.on {
+  background: var(--danger);
+}
+.scoreline {
+  margin: 8px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.rows {
+  margin-top: 14px;
+}
+.rows-label {
+  display: block;
+  margin-bottom: 7px;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.foot {
+  margin: 14px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.inline-alert {
+  margin: 0;
+  padding: 14px 22px;
+  background: #fbeae6;
+  border-top: 1px solid var(--line);
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+/* Results */
+.results {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.panel {
+  background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px;
+  min-width: 0;
+}
+.stat {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.stat b {
+  color: var(--text);
+  font-size: var(--fs-md);
+  margin-right: 2px;
+}
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.01em;
+  padding: 4px 9px 4px 8px;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+}
+.badge .bar {
+  width: 13px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.badge.warn {
+  color: var(--warn);
+  background: #fbf6ea;
+  border-color: #e6d9b4;
+}
+.badge.warn .bar {
+  background: var(--warn);
+}
+pre {
+  margin: 14px 0 0;
+  padding: 14px;
+  max-height: 280px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  line-height: 1.62;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 5px 10px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.copy:hover {
   color: var(--text);
   border-color: var(--accent);
 }
-.steps li.active .mark {
-  background: var(--accent);
-  animation: pulse 1s ease-in-out infinite;
-}
-.steps li.done {
+.copy.done {
   color: var(--ok);
-  border-color: var(--ok);
+  border-color: #bfd9c6;
 }
-.steps li.done .mark {
-  background: var(--ok);
+.copy svg {
+  width: 13px;
+  height: 13px;
 }
-.steps li.blocked,
-.steps li.error {
+
+/* Telemetry ledger */
+.count {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.empty {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 560px;
+  overflow: auto;
+}
+.log li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 11px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-sm);
+}
+.log li:first-child {
+  border-top: 0;
+}
+.lvl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 2px 5px;
+  border-radius: var(--r-sm);
+  color: var(--info);
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+}
+.log li.processed .lvl {
+  color: var(--ok);
+  background: #ecf5ef;
+  border-color: #bfd9c6;
+}
+.log li.blocked .lvl {
+  color: var(--warn);
+  background: #f7f0dd;
+  border-color: #e6d9b4;
+}
+.log li.error .lvl {
   color: var(--danger);
-  border-color: var(--danger);
+  background: #fbeae6;
+  border-color: #e6bcb5;
 }
-.steps li.blocked .mark,
-.steps li.error .mark {
-  background: var(--danger);
+.log-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
-.steps li.skipped {
-  opacity: 0.45;
+.log-body strong {
+  font-weight: 600;
+  color: var(--text);
+}
+.log-detail {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.log time {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* Motion */
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(380%);
+  }
 }
 @keyframes pulse {
   0%,
@@ -524,103 +1171,39 @@ button.ghost.small {
     opacity: 0.3;
   }
 }
-.blocked {
-  border-left: 3px solid var(--danger);
-}
-.rows {
-  margin-top: 12px;
-}
-.cardhead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.alert {
-  background: rgba(255, 93, 108, 0.12);
-  border: 1px solid var(--danger);
-  color: var(--danger);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 0.9rem;
-}
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-@media (max-width: 780px) {
-  .grid {
-    grid-template-columns: 1fr;
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
-pre {
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-size: 0.85rem;
-  max-height: 260px;
-  overflow: auto;
-  margin: 0;
+
+@media (max-width: 980px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 10px 0 0;
-}
-.badge {
-  background: rgba(79, 140, 255, 0.15);
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 0.78rem;
-}
-.badge.warn {
-  background: rgba(255, 176, 32, 0.15);
-  border-color: var(--warn);
-  color: var(--warn);
-}
-.audit {
-  margin-top: 10px;
-  font-family: ui-monospace, monospace;
-}
-.events {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.events li {
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--panel-2);
-  border-left: 3px solid var(--border);
-  font-size: 0.85rem;
-}
-.events li.processed {
-  border-left-color: var(--ok);
-}
-.events li.blocked {
-  border-left-color: var(--warn);
-}
-.events li.error {
-  border-left-color: var(--danger);
-}
-.events .time {
-  color: var(--muted);
-  font-family: ui-monospace, monospace;
-  font-size: 0.78rem;
+@media (max-width: 720px) {
+  .masthead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rail {
+    flex-wrap: wrap;
+    gap: 10px 0;
+  }
+  .rail .link {
+    display: none;
+  }
+  .blk-head {
+    flex-wrap: wrap;
+  }
 }
 </style>
