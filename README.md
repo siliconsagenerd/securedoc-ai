@@ -179,6 +179,15 @@ docker compose up --build
 Frontend: `http://localhost:3000` · Backend: `http://localhost:8000` · Validator:
 `http://localhost:8080`.
 
+> **Port conflict?** The compose file maps the frontend to host port `3000`. If
+> that port is already taken (Gitea, Grafana, another dev server), `docker compose
+> up` fails with `bind: address already in use`. Remap the frontend to `3001` in
+> [`docker-compose.yml`](docker-compose.yml) and open `http://localhost:3001`:
+>
+> ```yaml
+> ports: ["3001:80"]
+> ```
+
 The browser only ever talks to **nginx** on port 3000. nginx proxies `/api` and
 `/health` to the backend and injects `X-API-Key` from `SECUREDOC_API_KEY` at
 request time, so the key is **never built into the frontend bundle**. Backend and
