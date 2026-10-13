@@ -238,7 +238,7 @@ All settings are read from the environment or `backend/.env`.
 | Variable                    | Default                          | Purpose                                                     |
 | --------------------------- | -------------------------------- | ----------------------------------------------------------- |
 | `GEMINI_API_KEY`            | _(empty)_                        | Google Gemini API key; unset disables the LLM call.         |
-| `GEMINI_MODEL`              | `gemini-2.0-flash`               | Model used for processing.                                  |
+| `GEMINI_MODEL`              | `gemini-3.8-flash`               | Model used for processing.                                  |
 | `APP_ENV`                   | `development`                    | Environment label.                                          |
 | `DATABASE_URL`              | `sqlite:///./data/securedoc.db`  | SQLite path.                                                |
 | `AUDIT_LOG_PATH`            | `./data/audit.log`               | Append-only JSONL audit log.                                |

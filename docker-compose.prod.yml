@@ -4,7 +4,7 @@ services:
     environment:
       APP_ENV: production
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
       TOKEN_VAULT_KEY: ${TOKEN_VAULT_KEY:?TOKEN_VAULT_KEY is required}
       SECUREDOC_API_KEY: ${SECUREDOC_API_KEY:?SECUREDOC_API_KEY is required}
       JAVA_VALIDATOR_URL: http://java-validator:8080
