@@ -1,14 +1,22 @@
 # Prompt-injection guard evaluation
 
 > Guard hardening evaluation — after hardening
-> Run: 2026-10-12 06:22 UTC · threshold=40 · corpus=77 cases
+> Run: 2026-10-13 17:44 UTC · threshold=40 · corpus=77 cases
 
 ## Summary
 
+Evaluated on a labelled 77-case synthetic corpus at threshold 40 on 2026-10-13
+(17:44 UTC): 53 attack cases and 24 benign controls.
+
 | Metric | Value |
 | --- | --- |
-| Attack detection (recall) | **98.1%** (52/53 blocked) |
-| False-positive rate | **8.3%** (2/24 benign blocked) |
+| Injection recall (attacks blocked) | **98.1%** (52/53) |
+| Benign pass rate | **91.7%** (22/24) |
+| False-positive rate (benign blocked) | **8.3%** (2/24) |
+
+The threshold was selected on this same corpus, so these are initial baseline
+figures rather than a production-scale benchmark. Threshold tuning should move to
+a separate validation set before the numbers are relied on.
 
 ## Per category
 

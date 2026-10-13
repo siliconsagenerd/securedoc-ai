@@ -75,9 +75,23 @@ is *not* mitigated, so the threat model is honest rather than decorative.
 - **Prompt-injection defence** — a rule engine scores each request **0–100** with
   named categories, blocks at a configurable threshold, and unmasks evasion
   attempts (zero-width characters, unicode escapes, base64 payloads)
-  (`services/guard_service.py`). Measured on a labelled 77-case corpus
-  (`make eval-guard`): **98.1% detection / 8.3% false positives** — see
+  (`services/guard_service.py`). Evaluated on a labelled 77-case synthetic corpus
+  (`make eval-guard`): **98.1% injection recall (52/53)** and **8.3%
+  false-positive rate (2/24 benign cases)** at threshold 40. This is an initial
+  baseline measurement, not a production-scale benchmark.
+
+  This is a small, synthetic baseline corpus. The threshold was evaluated on the
+  same corpus, so results should be treated as an initial measurement rather than
+  a guaranteed real-world performance figure. The benign set should be
+  expanded—especially with realistic German contracts, invoices, HR documents,
+  and encoded business content—before tuning the threshold further. See
   [`docs/guard-eval.md`](docs/guard-eval.md).
+
+  The current guard is a deterministic first-line control. It is designed to catch
+  common direct and obfuscated injection patterns, but novel paraphrases, indirect
+  injections, and sophisticated semantic attacks may still evade it. A separately
+  governed classifier and ongoing red-team evaluation would be required for
+  stronger coverage.
 - **PII redaction** — Microsoft Presidio detects `PERSON`, `EMAIL_ADDRESS`,
   `PHONE_NUMBER`, `CREDIT_CARD`, `IBAN_CODE` (plus a custom German IBAN pattern);
   each entity becomes a `[PII_TYPE_<id>]` placeholder.
