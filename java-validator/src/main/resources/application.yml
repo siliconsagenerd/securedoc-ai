@@ -1,5 +1,6 @@
 server:
-  port: ${SERVER_PORT:8080}
+  # Railway injects PORT; SERVER_PORT and 8080 remain as fallbacks.
+  port: ${PORT:${SERVER_PORT:8080}}
 
 validator:
   # Maximum accepted document size in bytes (default 5 MiB).
