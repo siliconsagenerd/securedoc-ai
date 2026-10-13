@@ -32,18 +32,31 @@ check and in-memory rate limiter.
   detail.
 - `maxDuration` is set to 60s in `../vercel.json`.
 
-### Known limitation — Vercel Hobby plan
+## Vercel Hobby limitation
 
-- **Duration.** Hobby caps a function at **10s**; real Gemini calls have been
-  observed at **~11–14s**. On Hobby, LLM-backed requests will time out. Use a
-  Pro plan (60s) or call the Railway backend directly.
-- **Body size.** Vercel rejects request bodies over **~4.5 MB** at the platform
-  edge, below the app's 5 MB upload limit. Larger uploads must go to the backend
-  directly.
+Vercel Hobby is not recommended for a public live demo of SecureDoc AI.
 
-Because of the above, this proxy is best treated as a **demo-grade** edge for
-short requests. For production, either upgrade the Vercel plan or accept that
-uploads/long generations may fail here.
+Gemini processing may take 11–14 seconds, while Vercel Hobby serverless functions have an approximately 10-second execution limit. The application also supports uploads up to 5 MB, while Vercel Hobby has an approximately 4.5 MB request-body limit.
+
+For a hosted demo, deploy the Vue dashboard, FastAPI backend, and Java validator on a container platform that supports long-running services, such as Railway, Render, Fly.io, or a VPS.
+
+## Recommended hosted demo architecture
+
+```text
+Recommended hosted demo:
+Browser → Railway static hosting or Vercel frontend → Railway FastAPI backend → Railway Java validator → Gemini API
+
+All secrets remain server-side. The Java validator remains private. The backend is not exposed directly to the browser.
+```
+
+### When the Vercel proxy is still fine
+
+The proxy above is still usable for a **small, low-latency, text-only** demo:
+short `/api/process-document` calls that return well under 10 seconds and no file
+uploads. It is **not** appropriate for the full upload workflow (up to 5 MB) or
+for normal Gemini response times (11–14 s) on the Hobby plan — those requests
+will be cut off by the platform. For anything beyond that narrow case, host the
+frontend and backend together on a long-running container platform.
 
 ## Local check
 

@@ -8,6 +8,27 @@ frontend on **Vercel** and the FastAPI backend + Java validator on **Railway**.
 - [Option A — Vercel (frontend) + Railway (backend + validator)](#option-a--vercel-frontend--railway-backend--validator)
 - [Option B — single host with Docker Compose + nginx](#option-b--single-host-with-docker-compose--nginx)
 - [Security checklist (before going live)](#6-security-checklist-before-going-live)
+- [Vercel Hobby limitation](#vercel-hobby-limitation)
+
+## Vercel Hobby limitation
+
+Vercel Hobby is not recommended for a public live demo of SecureDoc AI.
+
+Gemini processing may take 11–14 seconds, while Vercel Hobby serverless functions have an approximately 10-second execution limit. The application also supports uploads up to 5 MB, while Vercel Hobby has an approximately 4.5 MB request-body limit.
+
+For a hosted demo, deploy the Vue dashboard, FastAPI backend, and Java validator on a container platform that supports long-running services, such as Railway, Render, Fly.io, or a VPS.
+
+## Recommended hosted demo architecture
+
+```text
+Recommended hosted demo:
+Browser → Railway static hosting or Vercel frontend → Railway FastAPI backend → Railway Java validator → Gemini API
+
+All secrets remain server-side. The Java validator remains private. The backend is not exposed directly to the browser.
+```
+
+Nothing below asserts that a Vercel or Railway deployment has been verified;
+the configuration is prepared, not deployed.
 
 ## Option A — Vercel (frontend) + Railway (backend + validator)
 
@@ -58,11 +79,12 @@ Browser ─▶ Vercel (Vue SPA + /api proxy) ─▶ Railway: FastAPI ─▶ Rail
 
 ### A.3 Known limitation
 
-The Vercel **Hobby** plan caps a serverless function at **10s** and a request
-body at **~4.5 MB** — both below this app's needs (Gemini calls run ~11–14s and
-uploads go to 5 MB). On Hobby, LLM-backed and larger-upload requests will fail
-at the edge; use a Pro plan or send those requests to the backend directly. See
-`frontend/api/README.md`.
+See [Vercel Hobby limitation](#vercel-hobby-limitation) above. In short: the
+Hobby plan caps a serverless function at **~10s** and a request body at
+**~4.5 MB**, both below this app's needs (Gemini runs ~11–14s; uploads go to
+5 MB). The proxy is only suitable for a small, low-latency, text-only demo; for
+anything more, host the frontend and backend together on a long-running
+container platform. Details in `frontend/api/README.md`.
 
 ### A.4 Verify (no deploy performed here)
 
