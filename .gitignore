@@ -1,50 +1,26 @@
 # Environment and secrets
 .env
 .env.*
-.env.production
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+.venv/
+venv/
 .pytest_cache/
 .coverage
 .coverage.*
-.cache
 htmlcov/
-.hypothesis/
 
-# Java/Maven
+# Java / Maven
 target/
 *.class
 *.jar
-*.war
-*.ear
-*.log
 
-# Node / Frontend
+# Node / Vue
 node_modules/
 dist/
-.coverage/
+coverage/
 test-results/
 playwright-report/
 blob-report/
@@ -52,33 +28,12 @@ blob-report/
 # Application data and audit logs
 data/*.db
 data/*.sqlite*
-data/audit.log
-data/audit.log.*
+data/*.log
+data/*.log.*
 backend/data/
 
-# IDE and OS
+# OS / editor
 .DS_Store
 .idea/
-.vscode/
 *.swp
-*.swo
 *~
-
-# Virtual environments
-.venv/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Type checkers and linters
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pytype/
-.ruff_cache/
-
-# Misc
-*.lcov
-.pybuilder/
