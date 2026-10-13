@@ -3,6 +3,14 @@
 SecureDoc AI is a privacy layer between a user's document and an external LLM.
 This document lists what it protects against, how, and where the guarantees stop.
 
+## Framework mapping
+
+The threats below are organised around the **OWASP LLM Top 10** and **EU AI Act
+risk-management themes** (technical documentation, logging, data governance,
+accuracy and robustness, and human oversight). This mapping is informational and
+non-exhaustive: SecureDoc AI is **not certified** and does **not claim compliance**
+with the EU AI Act or any other standard.
+
 ## Threat model
 
 | Threat                                       | Mitigation                                                                                      |
