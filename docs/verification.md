@@ -1,16 +1,17 @@
 # Verification status
 
-Recorded on 2026-10-11 (macOS, Docker CLI 29.8.1, Docker Compose v5.5.1).
+Last updated 2026-10-13 (macOS, Docker CLI 29.8.1, Docker Compose v5.5.1).
 
 ## Summary
 
 | Check | Command | Result |
 | --- | --- | --- |
-| Backend tests | `cd backend && ./.venv/bin/python -m pytest` | pass — 38 tests |
+| Backend tests | `cd backend && ./.venv/bin/python -m pytest` | pass — 58 tests |
 | Java tests | `cd java-validator && mvn test` | pass — 12 tests, BUILD SUCCESS |
+| Frontend E2E | `cd frontend && npm run test:e2e` | pass — 8 Playwright tests |
 | Frontend build | `cd frontend && npm run build` | pass — vue-tsc clean, bundle built |
 | Compose config | `docker compose config` | pass (with dummy env) |
-| Docker runtime | `docker compose up --build -d` | **NOT RUN — daemon unavailable** |
+| Docker runtime | `docker compose up --build -d` | verified live on 2026-10-12 (see note below) |
 
 ## Update 2026-10-12 — Docker runtime verified + security fixes
 

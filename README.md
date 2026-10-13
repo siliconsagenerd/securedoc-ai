@@ -6,7 +6,7 @@
 [![Vue 3](https://img.shields.io/badge/vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![tests](https://img.shields.io/badge/tests-42%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%208%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
+[![tests](https://img.shields.io/badge/tests-58%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%208%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
 
 **A security layer for LLM document processing.** Sensitive data is redacted and
 encrypted **locally** before any text reaches an external model, prompt-injection
