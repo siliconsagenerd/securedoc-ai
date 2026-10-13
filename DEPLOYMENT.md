@@ -1,8 +1,80 @@
 # Deploying SecureDoc AI
 
-Production deployment uses the same three containers as local development, with a
-TLS-terminating nginx edge on ports 80/443. The API key is injected by nginx as a
-request header and is **never** baked into the frontend bundle.
+There are two deployment shapes, described below. **Option B** (a single host
+with Docker Compose + nginx) is the reference and keeps everything on one
+network. **Option A** splits the app across managed platforms: the Vue
+frontend on **Vercel** and the FastAPI backend + Java validator on **Railway**.
+
+- [Option A — Vercel (frontend) + Railway (backend + validator)](#option-a--vercel-frontend--railway-backend--validator)
+- [Option B — single host with Docker Compose + nginx](#option-b--single-host-with-docker-compose--nginx)
+- [Security checklist (before going live)](#6-security-checklist-before-going-live)
+
+## Option A — Vercel (frontend) + Railway (backend + validator)
+
+This split hosts the SPA and the API on separate origins. The browser only ever
+talks to Vercel; a serverless proxy injects the API key so it never reaches the
+client, and it forwards to the backend over HTTPS.
+
+```
+Browser ─▶ Vercel (Vue SPA + /api proxy) ─▶ Railway: FastAPI ─▶ Railway: Java validator
+```
+
+### A.1 Backend on Railway
+
+1. Create a Railway service from this repo with **root directory `backend`**.
+   Railway detects `backend/Dockerfile`. The image binds `0.0.0.0:$PORT`.
+2. Add the validator as a second service (**root directory `java-validator`**,
+   `java-validator/Dockerfile`). It reads `PORT` from the environment
+   (`application.yml`).
+3. Give the backend a **private** reference to the validator and set the
+   backend's environment variables:
+
+   | Variable                | Value                                                        |
+   | ----------------------- | ------------------------------------------------------------ |
+   | `APP_ENV`               | `production`                                                 |
+   | `TOKEN_VAULT_KEY`       | `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+   | `SECUREDOC_API_KEY`     | `python -c "import secrets; print(secrets.token_hex(24))"`   |
+   | `GEMINI_API_KEY`        | Google Gemini key (optional but needed for real output)      |
+   | `GEMINI_MODEL`          | `gemini-3.8-flash`                                           |
+   | `JAVA_VALIDATOR_URL`    | `http://<validator-service>.railway.internal:8080`           |
+   | `ALLOWED_CORS_ORIGINS`  | `https://<your-project>.vercel.app`                          |
+   | `DATABASE_URL`          | `sqlite:////data/securedoc.db` (mount a Railway volume at `/data`) |
+   | `AUDIT_LOG_PATH`        | `/data/audit.log`                                            |
+
+4. Expose the backend with a **public domain** (Vercel must reach it). The
+   validator stays private. `SECUREDOC_API_KEY` is the only thing protecting the
+   public backend, so treat it as a secret and rotate it if exposed.
+
+### A.2 Frontend on Vercel
+
+1. Import the repo into Vercel with **root directory `frontend`**. Vercel uses
+   `frontend/vercel.json` (Vite build, `dist` output, SPA rewrite).
+2. Set the two **server-only** environment variables (see
+   `frontend/.env.production.example`): `SECUREDOC_API_KEY` (same value as the
+   backend) and `BACKEND_URL` (the Railway backend's public URL). Do not prefix
+   them with `VITE_`.
+3. `frontend/api/[[...path]].py` proxies `/api/process-document`,
+   `/api/upload-document`, and `/api/version` and injects `X-API-Key`.
+
+### A.3 Known limitation
+
+The Vercel **Hobby** plan caps a serverless function at **10s** and a request
+body at **~4.5 MB** — both below this app's needs (Gemini calls run ~11–14s and
+uploads go to 5 MB). On Hobby, LLM-backed and larger-upload requests will fail
+at the edge; use a Pro plan or send those requests to the backend directly. See
+`frontend/api/README.md`.
+
+### A.4 Verify (no deploy performed here)
+
+```bash
+curl -sf https://<backend>.up.railway.app/health | python -m json.tool
+curl -sf https://<frontend>.vercel.app/api/version | python -m json.tool
+```
+
+Do **not** run `vercel deploy` / `railway up` from an agent session; the buttons
+above belong to the account owner.
+
+## Option B — single host with Docker Compose + nginx
 
 ## 1. Prerequisites
 

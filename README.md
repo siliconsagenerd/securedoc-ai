@@ -335,4 +335,8 @@ npm run capture                   # regenerate the screenshots in docs/assets/
 - [`docs/screenshot-checklist.md`](docs/screenshot-checklist.md) — shots to capture.
 - [`docs/verification.md`](docs/verification.md) — release check results and the
   items that require a Docker daemon or a live Gemini key.
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) — production deployment, TLS, backup, rotation.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — production deployment: Vercel + Railway
+  (managed) and a single host with Docker Compose + nginx, plus TLS, backup,
+  rotation.
+- [`docs/live-demo-checklist.md`](docs/live-demo-checklist.md) — live-demo
+  safety and shutdown checklist.
