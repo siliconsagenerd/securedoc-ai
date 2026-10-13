@@ -1,6 +1,6 @@
 # Verification status
 
-Last updated 2026-10-13 (macOS, Docker CLI 29.8.1, Docker Compose v5.5.1).
+Last updated 2026-10-13 (macOS laptop driving a remote Docker daemon, Docker CLI 29.8.1, Docker Compose v5.5.1).
 
 ## Summary
 
@@ -11,7 +11,10 @@ Last updated 2026-10-13 (macOS, Docker CLI 29.8.1, Docker Compose v5.5.1).
 | Frontend E2E | `cd frontend && npm run test:e2e` | pass — 8 Playwright tests |
 | Frontend build | `cd frontend && npm run build` | pass — vue-tsc clean, bundle built |
 | Compose config | `docker compose config` | pass (with dummy env) |
-| Docker runtime | `docker compose up --build -d` | pass — verified live 2026-10-12 |
+| Docker runtime | `docker compose up --build -d` | pass — verified live 2026-10-13 on a remote daemon |
+| Smoke test | `make smoke` | pass — 7/7 checks |
+| Audit logging | `make audit` | pass — LLM entry records `outcome: success` |
+| Live Gemini inference | `make smoke` + `/api/process-document` | pass — `gemini-3.8-flash`, HTTP 200 |
 
 ## Docker runtime verification (2026-10-12)
 
@@ -19,12 +22,36 @@ On a running daemon:
 
 - `docker compose up -d --build`: backend, frontend, and java-validator images
   build; backend waits for a healthy java-validator; all three containers healthy.
-- Frontend serves the SPA at `http://127.0.0.1:3002`; `backend`/`java-validator`
-  `/health` return 200.
+- Frontend serves the SPA (verified through nginx) on the remote host at port
+  `3002`; the `backend` and `java-validator` `/health` checks return 200
+  (checked inside the Compose network via `docker compose exec`).
 - **Security and availability fixes re-checked live** (details in
   [`security-model.md`](security-model.md)): spoofed `X-Forwarded-For` now ends in
   `429`, a non-ASCII `X-API-Key` returns `401`, and an upload through nginx
   returns `200` within the bounded LLM timeout instead of a `504`.
+
+## Live Gemini verification (2026-10-13)
+
+Verified end-to-end against the running stack on the remote Docker daemon,
+using a real Gemini API key supplied through the environment (never printed,
+stored, or committed).
+
+- **Model ID:** `gemini-3.8-flash` — the single default across the backend,
+  `docker-compose.yml`, `docker-compose.prod.yml`, `.env.example`,
+  `.env.production.example`, and the README configuration table.
+- The synthetic sample invoice (`data/samples/invoice_sample.txt`) was submitted
+  to `POST /api/process-document` through the Compose network and returned
+  HTTP `200`.
+- `llm_output` contains a genuine model-generated summary of the invoice
+  (billing reference, outstanding amount, due date, and the redacted payment
+  details).
+- The response and the sanitized preview contain PII placeholders
+  (`[PII_PERSON_*]`, `[PII_IBAN_CODE_*]`, `[PII_CREDIT_CARD_*]`,
+  `[PII_PHONE_NUMBER_*]`, `[PII_EMAIL_ADDRESS_*]`); no raw PII (email, phone,
+  IBAN, card number, or personal name) appears anywhere in the response body.
+- The audit entry for the call records `"outcome": "success"` and
+  `"model": "gemini-3.8-flash"` with metadata only — no raw PII or document
+  text.
 
 ## Re-verification checklist (requires a Docker daemon)
 
@@ -50,6 +77,8 @@ docker compose down
 - [ ] Same-origin calls succeed without CORS errors.
 - [ ] Missing/invalid `X-API-Key` returns `401`.
 - [ ] Injection payload returns `400`; audit log records both outcomes.
+- [ ] With `GEMINI_API_KEY` in the environment, a document returns a model
+      summary and the audit entry shows `"outcome": "success"`.
 
 ## One-command re-verification
 
