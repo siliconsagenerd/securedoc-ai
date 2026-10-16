@@ -6,7 +6,7 @@
 [![Vue 3](https://img.shields.io/badge/vue-3-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![tests](https://img.shields.io/badge/tests-58%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%208%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
+[![tests](https://img.shields.io/badge/tests-58%20pytest%20%C2%B7%2012%20mvn%20%C2%B7%2013%20e2e-2ea44f)](https://github.com/siliconsagenerd/securedoc-ai)
 
 **A security layer for LLM document processing.** Sensitive data is redacted and
 encrypted **locally** before any text reaches an external model, prompt-injection
@@ -94,7 +94,8 @@ certification nor a claim of compliance.
   strict text/upload size limits before any model call.
 - **Audit trail** — every processed, blocked, or rejected request appends a
   metadata-only record to `data/audit.log`.
-- **Security dashboard** — Vue 3 UI with a live pipeline view, blocked-request
+- **Security dashboard** — Vue 3 UI with one-click synthetic examples, clearly
+  labelled illustrative sample results, a live pipeline view, blocked-request
   panel, copy buttons, and a session event feed.
 
 ## Architecture
@@ -306,10 +307,16 @@ the key the app is actually configured with.
 ### End-to-end browser tests (Playwright)
 
 Boots the Java validator, the FastAPI backend, and the Vite dev server, then
-runs the full user journey in a real headless Chromium: safe-document
-processing + PII redaction + audit trail, malicious-payload blocking, and the
-upload flow. The suite runs **without a Gemini key** and asserts the graceful
-"LLM unavailable" state instead of calling a model.
+runs the user journey in a real headless Chromium: safe-document processing
++ PII redaction + audit trail, malicious-payload blocking, the upload flow,
+and the one-click synthetic examples (standard invoice, synthetic-PII invoice,
+embedded malicious instruction). Synthetic-example submissions display clearly
+labelled illustrative samples; arbitrary input retains the graceful unavailable
+state. Validator-dependent upload behavior requires a Java runtime (JDK 21).
+The suite runs **without a Gemini key** and asserts the graceful "LLM
+unavailable" state instead of calling a model. In this environment, the full
+official `npm run test:e2e` was not executed because Java was unavailable; the
+text-backend Playwright checks passed (`8` tests) and `npm run build` passed.
 
 ```bash
 cd frontend
