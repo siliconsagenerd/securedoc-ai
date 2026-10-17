@@ -21,14 +21,15 @@ test('invoice with synthetic personal data shows illustrative result only', asyn
   await expect(page.locator('.badges .badge').first()).toBeVisible()
 })
 
-test('malicious example stays blocked and shows illustrative label', async ({ page }) => {
+test('malicious example stays blocked and does not show sample output', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Document with an embedded malicious instruction' }).click()
   await page.getByRole('button', { name: 'Process securely' }).click()
 
   await expect(page.getByRole('heading', { name: 'Request blocked' })).toBeVisible()
-  await expect(page.getByText('Illustrative sample — not live model output')).toBeVisible()
-  await expect(page.getByText('Illustratives Beispiel — keine Live-Modellantwort')).toBeVisible()
+  await expect(page.getByText('Illustrative sample — not live model output')).toHaveCount(0)
+  await expect(page.getByText('Model — SAMPLE')).toHaveCount(0)
+  await expect(page.locator('.trace-detail', { hasText: 'not run (blocked before model)' })).toBeVisible()
 })
 
 test('arbitrary input keeps the honest unavailable state', async ({ page }) => {

@@ -446,12 +446,6 @@ async function submit() {
           </div>
 
           <p class="msg">{{ blocked.message }}</p>
-          <p v-if="illustrativeKind" class="illustrative-label">
-            Model — SAMPLE<br />
-            Illustrative output; no live model call<br />
-            Illustrative sample — not live model output<br />
-            Illustratives Beispiel — keine Live-Modellantwort
-          </p>
 
           <div v-if="typeof blocked.score === 'number'" class="meter" aria-hidden="true">
             <i v-for="n in 10" :key="n" :class="{ on: n <= Math.round((blocked.score as number) / 10) }" />
