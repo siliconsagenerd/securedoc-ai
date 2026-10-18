@@ -46,9 +46,9 @@ flowchart LR
 
 Interactive version: [SecureDoc architecture diagram](docs/diagrams/secure-doc-architecture.html).
 
-Raw values never reach the model — here is the flow in practice:
+Raw values never reach the model: here is the flow in practice:
 
-![SecureDoc AI — live demo](docs/assets/demo-flow.gif)
+![SecureDoc AI: live demo](docs/assets/demo-flow.gif)
 
 | Safe document, processed & redacted                                     | Prompt injection, blocked                                            |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -64,7 +64,7 @@ concerns that come up when an application sends documents to an LLM:
 | Security concern                                  | What this project shows                                          |
 | ------------------------------------------------- | ---------------------------------------------------------------- |
 | **Securing the AI supply chain**                  | LLM access handled like any other external dependency: an API key injected by the edge proxy, never shipped in client code, validated before use |
-| **Prompt-injection & evasion defence** (`OWASP LLM-01`) | Rule-based 0–100 risk scoring, category attribution, unicode/base64/zero-width evasion unmasking, hard threshold blocking |
+| **Prompt-injection & evasion defence** (`OWASP LLM-01`) | Rule-based 0 to 100 risk scoring, category attribution, unicode/base64/zero-width evasion unmasking, hard threshold blocking |
 | **Data privacy & GDPR data minimisation**         | Presidio-based redaction runs *before* the model call; raw values never cross the boundary; only placeholders are ever sent out |
 | **Application/API security**                      | API-key auth, per-client rate limiting, size caps, fail-closed validation, append-only auditable logging, TLS in the prod compose |
 | **Polyglot engineering + testing discipline**     | FastAPI + Spring Boot + Vue/TS; pytest, mvn, Playwright E2E and a one-command verification script |
@@ -77,11 +77,11 @@ certification nor a claim of compliance.
 
 ## Features
 
-- **Document validation microservice** — a Spring Boot service checks upload
+- **Document validation microservice**: a Spring Boot service checks upload
   metadata (extension, declared content type, size, non-emptiness, path-traversal
   safety) and returns a structured result. The backend calls it before reading any
   file and **fails closed** if it is unavailable (`java-validator/`).
-- **Prompt-injection defence** — a rule engine scores each request **0–100** with
+- **Prompt-injection defence**: a rule engine scores each request **0 to 100** with
   named categories, blocks at a configurable threshold, and unmasks evasion
   attempts (zero-width characters, unicode escapes, base64 payloads)
   (`services/guard_service.py`). Evaluated on a labelled 77-case synthetic corpus
@@ -92,7 +92,7 @@ certification nor a claim of compliance.
   This is a small, synthetic baseline corpus. The threshold was evaluated on the
   same corpus, so results should be treated as an initial measurement rather than
   a guaranteed real-world performance figure. The benign set should be
-  expanded—especially with realistic German contracts, invoices, HR documents,
+  expanded, especially with realistic German contracts, invoices, HR documents,
   and encoded business content—before tuning the threshold further. See
   [`docs/guard-eval.md`](docs/guard-eval.md).
 
@@ -101,18 +101,18 @@ certification nor a claim of compliance.
   injections, and sophisticated semantic attacks may still evade it. A separately
   governed classifier and ongoing red-team evaluation would be required for
   stronger coverage.
-- **PII redaction** — Microsoft Presidio detects `PERSON`, `EMAIL_ADDRESS`,
+- **PII redaction**: Microsoft Presidio detects `PERSON`, `EMAIL_ADDRESS`,
   `PHONE_NUMBER`, `CREDIT_CARD`, `IBAN_CODE` (plus a custom German IBAN pattern);
   each entity becomes a `[PII_TYPE_<id>]` placeholder.
-- **Encrypted vault** — placeholder → original mappings are stored with Fernet
+- **Encrypted vault**: placeholder → original mappings are stored with Fernet
   (AES-128-CBC + HMAC) and never leave the backend.
-- **Upload + text extraction** — `txt`, `md`, `pdf` (pypdf), `docx` (python-docx)
+- **Upload + text extraction**: `txt`, `md`, `pdf` (pypdf), `docx` (python-docx)
   are read **in memory only**; uploads are never written to disk.
-- **Abuse protection** — per-client-IP rate limiting (`429` + `Retry-After`) and
+- **Abuse protection**: per-client-IP rate limiting (`429` + `Retry-After`) and
   strict text/upload size limits before any model call.
-- **Audit trail** — every processed, blocked, or rejected request appends a
+- **Audit trail**: every processed, blocked, or rejected request appends a
   metadata-only record to `data/audit.log`.
-- **Security dashboard** — Vue 3 UI with one-click synthetic examples, clearly
+- **Security dashboard**: Vue 3 UI with one-click synthetic examples, clearly
   labelled illustrative sample results, a live pipeline view, blocked-request
   panel, copy buttons, and a session event feed.
 
@@ -263,7 +263,7 @@ All settings are read from the environment or `backend/.env`.
 | `AUDIT_LOG_PATH`            | `./data/audit.log`               | Append-only JSONL audit log.                                |
 | `TOKEN_VAULT_KEY`           | _(empty)_                        | Fernet key or passphrase; **required** for redaction.       |
 | `SECUREDOC_API_KEY`         | _(empty)_                        | API key for protected endpoints; **required** to serve them.|
-| `INJECTION_BLOCK_THRESHOLD` | `40`                             | Risk score (0–100) at or above which a request is blocked.  |
+| `INJECTION_BLOCK_THRESHOLD` | `40`                             | Risk score (0 to 100) at or above which a request is blocked.  |
 | `JAVA_VALIDATOR_URL`        | `http://localhost:8080`          | Base URL of the validation service.                         |
 | `MAX_UPLOAD_SIZE_MB`        | `5`                              | Maximum accepted document size.                             |
 | `MAX_TEXT_CHARS`            | `20000`                          | Maximum text length for `/api/process-document`.            |
@@ -283,11 +283,11 @@ All protected endpoints require the `X-API-Key` header.
 
 `multipart/form-data` with `file` (`.txt`, `.md`, `.pdf`, `.docx`, ≤ 5 MB) and an
 optional `task`. The file is validated, extracted in memory, then processed by the
-same pipeline — it is never stored.
+same pipeline: it is never stored.
 
-**200** — `{ task, filename, sanitized_preview, pii: { entity_count, entity_types, entities }, llm_output, audit_event_id, latency_ms }`
+**200**: `{ task, filename, sanitized_preview, pii: { entity_count, entity_types, entities }, llm_output, audit_event_id, latency_ms }`
 
-**400** — blocked by the guard (or rejected by the validator):
+**400**: blocked by the guard (or rejected by the validator):
 
 ```json
 {
@@ -306,8 +306,8 @@ Other statuses: **401** missing/invalid key, **413** too large (text or file),
 
 ### Utility endpoints
 
-- `GET /health` — liveness probe with version.
-- `GET /api/version` — app name and version.
+- `GET /health`: liveness probe with version.
+- `GET /api/version`: app name and version.
 
 ## Tests
 
@@ -345,23 +345,23 @@ npm run capture                   # regenerate the screenshots in docs/assets/
 
 ## Acknowledgements
 
-- **PII detection/anonymisation** — [Microsoft Presidio](https://microsoft.github.io/presidio/).
-- **Prompt-injection taxonomy** — informed by the [OWASP LLM Application
+- **PII detection/anonymisation**: [Microsoft Presidio](https://microsoft.github.io/presidio/).
+- **Prompt-injection taxonomy**: informed by the [OWASP LLM Application
   Security Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
   (overflow attacks, indirect injection, prompt leakage) and EU AI Act
   risk-management themes.
-- **Document validation microservice** — Spring Boot 3.
+- **Document validation microservice**: Spring Boot 3.
 
 ## Documentation
 
-- [`docs/architecture.md`](docs/architecture.md) — components and request flow.
-- [`docs/security-model.md`](docs/security-model.md) — threats, mitigations, limits.
-- [`docs/demo-script.md`](docs/demo-script.md) — a five-minute demo walkthrough.
-- [`docs/screenshot-checklist.md`](docs/screenshot-checklist.md) — shots to capture.
-- [`docs/verification.md`](docs/verification.md) — release check results and the
+- [`docs/architecture.md`](docs/architecture.md): components and request flow.
+- [`docs/security-model.md`](docs/security-model.md): threats, mitigations, limits.
+- [`docs/demo-script.md`](docs/demo-script.md): a five-minute demo walkthrough.
+- [`docs/screenshot-checklist.md`](docs/screenshot-checklist.md): shots to capture.
+- [`docs/verification.md`](docs/verification.md): release check results and the
   items that require a Docker daemon or a live Gemini key.
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) — production deployment: Vercel + Railway
+- [`DEPLOYMENT.md`](DEPLOYMENT.md): production deployment: Vercel + Railway
   (managed) and a single host with Docker Compose + nginx, plus TLS, backup,
   rotation.
-- [`docs/live-demo-checklist.md`](docs/live-demo-checklist.md) — live-demo
+- [`docs/live-demo-checklist.md`](docs/live-demo-checklist.md): live-demo
   safety and shutdown checklist.
