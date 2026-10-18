@@ -13,6 +13,9 @@ encrypted **locally** before any text reaches an external model, prompt-injectio
 attempts are scored and blocked, uploads are validated by a separate Java service,
 and every decision is written to an append-only audit log.
 
+Live demo: https://securedoc-frontend-production.up.railway.app/
+Synthetic examples only; live LLM inference is unavailable.
+
 ```mermaid
 flowchart LR
     subgraph Client
