@@ -3,23 +3,19 @@
 :root {
   color-scheme: dark;
 
-  /* Monochrome workstation: structure comes from rules, not color. */
   --bg: #070b12;
   --surface: #0a0e17;
   --surface-2: #111827;
   --surface-3: #182234;
   --ink: #070b12;
 
-  /* Hairlines carry the structure; no shadows, no gradients. */
   --line: #1f293d;
   --line-2: #334155;
 
-  /* Text */
   --text: #f1f5f9;
   --text-2: #cbd5e1;
   --text-3: #94a3b8;
 
-  /* Neutral controls; semantic color is used only for states. */
   --accent: #10b981;
   --accent-hover: #059669;
   --accent-ink: #052e16;
@@ -90,7 +86,6 @@ svg {
   font-variant-numeric: tabular-nums;
 }
 
-/* Browser surfaces carry the design too */
 ::selection {
   background: var(--ok);
   color: #052e16;

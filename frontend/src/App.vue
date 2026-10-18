@@ -556,7 +556,6 @@ async function submit() {
   padding: 0 20px 64px;
 }
 
-/* Masthead */
 .masthead {
   display: flex;
   align-items: center;
@@ -645,7 +644,6 @@ async function submit() {
   background: var(--danger);
 }
 
-/* Layout — two sheets, hairline-divided inside */
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
@@ -666,7 +664,6 @@ async function submit() {
   border-top: 1px solid var(--line);
 }
 
-/* Section head */
 .blk-head {
   display: flex;
   align-items: center;
@@ -691,7 +688,6 @@ async function submit() {
   margin-left: auto;
 }
 
-/* Intake */
 .input-panel {
   position: relative;
 }
@@ -924,7 +920,6 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
-/* Pipeline rail */
 .rail {
   display: flex;
   align-items: center;
@@ -1013,7 +1008,6 @@ textarea:disabled {
   opacity: 0.45;
 }
 
-/* Blocked alert */
 .alert-panel {
   background: rgba(239, 68, 68, 0.08);
 }
@@ -1113,7 +1107,6 @@ textarea:disabled {
   font-weight: 500;
 }
 
-/* Results */
 .results {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1223,7 +1216,6 @@ pre {
   height: 13px;
 }
 
-/* Telemetry ledger */
 .count {
   font-size: var(--fs-xs);
   color: var(--text-3);
@@ -1336,7 +1328,6 @@ pre {
   text-overflow: ellipsis;
 }
 
-/* Synthetic-example and trace details */
 .illustrative-label {
   margin: 12px 0 0;
   padding: 10px 12px;
@@ -1358,7 +1349,6 @@ pre {
   font-family: var(--mono);
 }
 
-/* Touch targets */
 .btn {
   min-height: 44px;
 }
@@ -1366,7 +1356,6 @@ pre {
   min-height: 36px;
 }
 
-/* Motion */
 @keyframes sweep {
   0% {
     transform: translateX(-100%);
@@ -1420,7 +1409,6 @@ pre {
   }
 }
 
-/* Visual redesign: flat, high-contrast workstation. No gradients. */
 .shell {
   max-width: 1380px;
   padding: 0 28px 72px;
@@ -1608,7 +1596,6 @@ textarea:focus-visible {
 }
 
 
-/* Stronger workstation layout: dense, ruled, no decoration. */
 .shell {
   max-width: 1440px;
   padding: 0 32px 80px;
