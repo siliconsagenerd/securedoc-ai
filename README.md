@@ -41,6 +41,8 @@ flowchart LR
     B --> U
 ```
 
+Interactive version: [SecureDoc architecture diagram](docs/diagrams/secure-doc-architecture.html).
+
 Raw values never reach the model — here is the flow in practice:
 
 ![SecureDoc AI — live demo](docs/assets/demo-flow.gif)
