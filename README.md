@@ -11,19 +11,32 @@
 **A security layer for LLM document processing.** Sensitive data is redacted and
 encrypted **locally** before any text reaches an external model, prompt-injection
 attempts are scored and blocked, uploads are validated by a separate Java service,
-and every decision is written to an append-only audit log — aligned with GDPR
-data-minimisation principles.
+and every decision is written to an append-only audit log.
 
 ```mermaid
 flowchart LR
-    U[Vue 3 dashboard] -->|same-origin /api| F[nginx proxy<br/>injects X-API-Key]
-    F --> B[FastAPI backend]
-    B --> J[Java validator<br/>Spring Boot]
-    B --> G{Injection guard<br/>risk 0-100}
-    G -->|blocked| A[(Audit log)]
-    G -->|allowed| P[Presidio redaction<br/>+ Fernet vault]
-    P -->|sanitized text only| M[Gemini API]
-    M --> B
+    subgraph Client
+        U[Vue 3 dashboard]
+    end
+    subgraph Edge
+        F[nginx proxy<br/>injects X-API-Key]
+    end
+    subgraph Backend
+        B[FastAPI backend]
+        J[Java validator]
+        G{Injection guard<br/>0-100}
+        P[Presidio redaction<br/>+ Fernet vault]
+        A[(Audit log)]
+    end
+    subgraph Model
+        M[Gemini API]
+    end
+
+    U -->|same-origin /api| F --> B
+    B --> J
+    B --> G
+    G -->|blocked| A
+    G -->|allowed| P -->|sanitized text only| M --> B
     B --> A
     B --> U
 ```
@@ -50,7 +63,7 @@ concerns that come up when an application sends documents to an LLM:
 | **Data privacy & GDPR data minimisation**         | Presidio-based redaction runs *before* the model call; raw values never cross the boundary; only placeholders are ever sent out |
 | **Application/API security**                      | API-key auth, per-client rate limiting, size caps, fail-closed validation, append-only auditable logging, TLS in the prod compose |
 | **Polyglot engineering + testing discipline**     | FastAPI + Spring Boot + Vue/TS; pytest, mvn, Playwright E2E and a one-command verification script |
-| **Realistic production concerns**                 | containerised deployment (dev + prod compose), healthchecks, Dockerfiles, backup/rotation runbook |
+| **Production-style concerns**                 | containerised deployment (dev + prod compose), healthchecks, Dockerfiles, backup/rotation runbook |
 
 The threat model in [`docs/security-model.md`](docs/security-model.md) is informed
 by the **OWASP LLM Top 10** and considers **EU AI Act** risk-management themes.
@@ -102,21 +115,21 @@ certification nor a claim of compliance.
 
 ```mermaid
 flowchart TB
-    subgraph client [Browser]
+    subgraph Client
         UI[Vue 3 dashboard]
     end
-    subgraph edge [nginx]
-        NX[proxy /api /health<br/>injects X-API-Key]
+    subgraph Edge
+        NX[nginx proxy<br/>injects X-API-Key]
     end
-    subgraph backend [FastAPI]
-        RT[API routes + X-API-Key auth]
-        EX[Extraction: pypdf / python-docx]
+    subgraph Backend
+        RT[API routes + auth]
+        EX[Text extraction]
         GD[Injection guard 0-100]
-        PI[Presidio redaction + Fernet vault]
+        PI[Presidio redaction + vault]
         AU[JSONL audit log]
         VC[Validation client]
     end
-    VAL[Java validator: Spring Boot]
+    VAL[Java validator]
     LLM[Gemini API]
 
     UI --> NX --> RT
