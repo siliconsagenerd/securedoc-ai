@@ -51,11 +51,14 @@ export async function handleChat(req: any, res: any, config: Config, store: Stor
       if (m.reasoning_content === undefined || m.reasoning_content === null) {
         m.reasoning_content = typeof m.reasoning === 'string' ? m.reasoning : '';
       }
+      // Also strip any stray reasoning fields that might confuse upstreams
+      if (m.reasoning === undefined) m.reasoning = m.reasoning_content;
     }
   }
-  if (body?.reasoning_effort === undefined) {
-    body.reasoning_effort = 'none';
-  }
+  // Force reasoning off for every request so upstreams that require
+  // reasoning_content on prior assistant turns never reject the call.
+  body.reasoning_effort = 'none';
+  body.thinking = { type: 'disabled' };
   const deadline = Date.now() + config.totalDeadlineMs;
   const tried = new Set<number>();
   const maxAttempts = pinned !== null ? 1 : config.maxAttempts;
