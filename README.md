@@ -48,27 +48,29 @@ Interactive version: [SecureDoc architecture diagram](docs/diagrams/secure-doc-a
 
 Raw values never reach the model: here is the flow in practice:
 
-![SecureDoc AI: live demo](docs/assets/demo-flow.gif)
+![SecureDoc AI: live demo flow](docs/assets/demo-flow.gif)
+
+![SecureDoc AI: live demo](docs/assets/dashboard-live.png)
 
 | Safe document, processed & redacted                                     | Prompt injection, blocked                                            |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| ![Processed result](docs/assets/processed.png)                          | ![Blocked request](docs/assets/blocked.png)                         |
+| ![Processed result](docs/assets/processed-live.png)                    | ![Blocked request](docs/assets/blocked-live.png)                   |
 
-![Dashboard](docs/assets/dashboard.png)
+![Dashboard](docs/assets/dashboard-live.png)
 
 ## What this project covers
 
-This repository is a small end-to-end system that exercises the security
+This repository is a small end-to-end system that demonstrates the security
 concerns that come up when an application sends documents to an LLM:
 
 | Security concern                                  | What this project shows                                          |
 | ------------------------------------------------- | ---------------------------------------------------------------- |
-| **Securing the AI supply chain**                  | LLM access handled like any other external dependency: an API key injected by the edge proxy, never shipped in client code, validated before use |
-| **Prompt-injection & evasion defence** (`OWASP LLM-01`) | Rule-based 0 to 100 risk scoring, category attribution, unicode/base64/zero-width evasion unmasking, hard threshold blocking |
-| **Data privacy & GDPR data minimisation**         | Presidio-based redaction runs *before* the model call; raw values never cross the boundary; only placeholders are ever sent out |
-| **Application/API security**                      | API-key auth, per-client rate limiting, size caps, fail-closed validation, append-only auditable logging, TLS in the prod compose |
-| **Polyglot engineering + testing discipline**     | FastAPI + Spring Boot + Vue/TS; pytest, mvn, Playwright E2E and a one-command verification script |
-| **Production-style concerns**                 | containerised deployment (dev + prod compose), healthchecks, Dockerfiles, backup/rotation runbook |
+| **LLM access as an external dependency**          | API key injected by the edge proxy, never shipped in client code, validated before use |
+| **Prompt injection and evasion** (`OWASP LLM-01`) | Rule-based 0 to 100 risk scoring, category attribution, unicode/base64/zero-width evasion unmasking, hard threshold blocking |
+| **Data privacy and GDPR minimization**            | Presidio-based redaction runs before the model call; raw values never cross the boundary; only placeholders are ever sent out |
+| **Application and API security**                  | API-key auth, per-client rate limiting, size caps, fail-closed validation, append-only auditable logging, TLS in the prod compose |
+| **Polyglot stack and tests**                      | FastAPI + Spring Boot + Vue/TS; pytest, mvn, Playwright E2E and a one-command verification script |
+| **Deployment hygiene**                            | Containerized deployment (dev + prod compose), healthchecks, Dockerfiles, backup/rotation runbook |
 
 The threat model in [`docs/security-model.md`](docs/security-model.md) is informed
 by the **OWASP LLM Top 10** and considers **EU AI Act** risk-management themes.
@@ -77,44 +79,42 @@ certification nor a claim of compliance.
 
 ## Features
 
-- **Document validation microservice**: a Spring Boot service checks upload
-  metadata (extension, declared content type, size, non-emptiness, path-traversal
-  safety) and returns a structured result. The backend calls it before reading any
-  file and **fails closed** if it is unavailable (`java-validator/`).
-- **Prompt-injection defence**: a rule engine scores each request **0 to 100** with
-  named categories, blocks at a configurable threshold, and unmasks evasion
-  attempts (zero-width characters, unicode escapes, base64 payloads)
-  (`services/guard_service.py`). Evaluated on a labelled 77-case synthetic corpus
-  (`make eval-guard`): **98.1% injection recall (52/53)** and **8.3%
-  false-positive rate (2/24 benign cases)** at threshold 40. This is an initial
-  baseline measurement, not a production-scale benchmark.
+- A Spring Boot service validates upload metadata (extension, declared content
+  type, size, non-emptiness, path-traversal safety) and returns a structured
+  result. The backend calls it before reading any file and fails closed if it is
+  unavailable (`java-validator/`).
+- A rule engine scores each request 0 to 100 with named categories, blocks at a
+  configurable threshold, and unmasks evasion attempts (zero-width characters,
+  unicode escapes, base64 payloads) (`services/guard_service.py`). Evaluated on a
+  labeled 77-case synthetic corpus (`make eval-guard`): 98.1% injection recall
+  (52/53) and 8.3% false-positive rate (2/24 benign cases) at threshold 40.
+  This is an initial baseline measurement, not a production-scale benchmark.
 
-  This is a small, synthetic baseline corpus. The threshold was evaluated on the
-  same corpus, so results should be treated as an initial measurement rather than
-  a guaranteed real-world performance figure. The benign set should be
-  expanded, especially with realistic German contracts, invoices, HR documents,
-  and encoded business content before tuning the threshold further. See
-  [`docs/guard-eval.md`](docs/guard-eval.md).
+  The threshold was evaluated on the same corpus, so results should be treated as
+  an initial measurement rather than a guaranteed real-world performance figure.
+  The benign set should be expanded, especially with realistic German contracts,
+  invoices, HR documents, and encoded business content before tuning the threshold
+  further. See [`docs/guard-eval.md`](docs/guard-eval.md).
 
   The current guard is a deterministic first-line control. It is designed to catch
   common direct and obfuscated injection patterns, but novel paraphrases, indirect
   injections, and sophisticated semantic attacks may still evade it. A separately
   governed classifier and ongoing red-team evaluation would be required for
   stronger coverage.
-- **PII redaction**: Microsoft Presidio detects `PERSON`, `EMAIL_ADDRESS`,
-  `PHONE_NUMBER`, `CREDIT_CARD`, `IBAN_CODE` (plus a custom German IBAN pattern);
-  each entity becomes a `[PII_TYPE_<id>]` placeholder.
-- **Encrypted vault**: placeholder → original mappings are stored with Fernet
-  (AES-128-CBC + HMAC) and never leave the backend.
-- **Upload + text extraction**: `txt`, `md`, `pdf` (pypdf), `docx` (python-docx)
-  are read **in memory only**; uploads are never written to disk.
-- **Abuse protection**: per-client-IP rate limiting (`429` + `Retry-After`) and
-  strict text/upload size limits before any model call.
-- **Audit trail**: every processed, blocked, or rejected request appends a
-  metadata-only record to `data/audit.log`.
-- **Security dashboard**: Vue 3 UI with one-click synthetic examples, clearly
-  labelled illustrative sample results, a live pipeline view, blocked-request
-  panel, copy buttons, and a session event feed.
+- Microsoft Presidio detects `PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`,
+  `CREDIT_CARD`, `IBAN_CODE` (plus a custom German IBAN pattern); each entity
+  becomes a `[PII_TYPE_<id>]` placeholder.
+- Placeholder to original mappings are stored with Fernet (AES-128-CBC + HMAC)
+  and never leave the backend.
+- `txt`, `md`, `pdf` (pypdf), `docx` (python-docx) are read in memory only;
+  uploads are never written to disk.
+- Per-client-IP rate limiting (429 + Retry-After) and strict text/upload size
+  limits before any model call.
+- Every processed, blocked, or rejected request appends a metadata-only record to
+  `data/audit.log`.
+- Vue 3 UI with one-click synthetic examples, clearly labeled illustrative
+  sample results, a live pipeline view, blocked-request panel, copy buttons, and
+  a session event feed.
 
 ## Architecture
 
@@ -318,8 +318,8 @@ cd frontend && npm run build                                         # type-chec
 ```
 
 The pytest suite configures its own `TOKEN_VAULT_KEY` and `SECUREDOC_API_KEY`
-via `setdefault` in `tests/conftest.py`, so it runs without environment setup:
-and an explicitly exported value is honoured, so the auth tests always exercise
+via `setdefault` in `tests/conftest.py`, so it runs without environment setup,
+and an explicitly exported value is honored, so the auth tests always exercise
 the key the app is actually configured with.
 
 ### End-to-end browser tests (Playwright)
@@ -329,12 +329,12 @@ runs the user journey in a real headless Chromium: safe-document processing
 + PII redaction + audit trail, malicious-payload blocking, the upload flow,
 and the one-click synthetic examples (standard invoice, synthetic-PII invoice,
 embedded malicious instruction). Synthetic-example submissions display clearly
-labelled illustrative samples; arbitrary input retains the graceful unavailable
+labeled illustrative samples; arbitrary input retains the graceful unavailable
 state. Validator-dependent upload behavior requires a Java runtime (JDK 21).
 The suite runs **without a Gemini key** and asserts the graceful "LLM
-unavailable" state instead of calling a model. In this environment, the full
-official `npm run test:e2e` was not executed because Java was unavailable; the
-text-backend Playwright checks passed (`8` tests) and `npm run build` passed.
+unavailable" state instead of calling a model. The full `npm run test:e2e`
+requires a Java runtime (JDK 21); without it, the text-backend Playwright checks
+passed (`8` tests) and `npm run build` passed.
 
 ```bash
 cd frontend
@@ -345,7 +345,7 @@ npm run capture                   # regenerate the screenshots in docs/assets/
 
 ## Acknowledgements
 
-- **PII detection/anonymisation**: [Microsoft Presidio](https://microsoft.github.io/presidio/).
+- **PII detection/anonymization**: [Microsoft Presidio](https://microsoft.github.io/presidio/).
 - **Prompt-injection taxonomy**: informed by the [OWASP LLM Application
   Security Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
   (overflow attacks, indirect injection, prompt leakage) and EU AI Act
