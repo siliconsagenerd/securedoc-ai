@@ -16,6 +16,11 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
+    # OpenAI-compatible provider (e.g. OmniRoute). Empty => use Gemini directly.
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
+    llm_fallback_models: str = ""
     app_env: str = "development"
     database_url: str = "sqlite:///./data/securedoc.db"
     audit_log_path: str = "./data/audit.log"
