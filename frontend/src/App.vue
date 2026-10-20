@@ -52,8 +52,9 @@ const messages: Record<Locale, Record<string, string>> = {
     modelOutput: 'Modell-Ausgabe',
     copy: 'Kopieren',
     copied: 'Kopiert',
-    'stat.entity1': '{count} Entität vor Übertragung redigiert',
-    'stat.entityN': '{count} Entitäten vor Übertragung redigiert',
+    'stat.entity1': 'Entität vor Übertragung redigiert',
+    'stat.entityN': 'Entitäten vor Übertragung redigiert',
+    document: 'Dokument',
     auditEvent: 'Audit-Ereignis {id}',
     liveTelemetry: 'Live-Telemetrie',
     'telemetry.event1': '{n} Ereignis',
@@ -106,6 +107,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'rec.backendUnreachable': 'Backend nicht erreichbar',
     'rec.audit': 'Audit {id}',
     'rec.networkError': 'Netzwerkfehler',
+    'rec.backendUnreachableMsg': 'Backend nicht erreichbar. Läuft die API?',
   },
   en: {
     subtitle: 'Redacts personal data and stops prompt injection before any model sees the document.',
@@ -142,8 +144,9 @@ const messages: Record<Locale, Record<string, string>> = {
     modelOutput: 'Model output',
     copy: 'Copy',
     copied: 'Copied',
-    'stat.entity1': '{count} entity redacted before transmission',
-    'stat.entityN': '{count} entities redacted before transmission',
+    'stat.entity1': 'entity redacted before transmission',
+    'stat.entityN': 'entities redacted before transmission',
+    document: 'Document',
     auditEvent: 'audit event {id}',
     liveTelemetry: 'Live telemetry',
     'telemetry.event1': '{n} event',
@@ -196,6 +199,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'rec.backendUnreachable': 'Backend unreachable',
     'rec.audit': 'audit {id}',
     'rec.networkError': 'network error',
+    'rec.backendUnreachableMsg': 'Backend unreachable. Is the API running?',
   },
 }
 
@@ -457,7 +461,7 @@ async function submit() {
     illustrativeKind.value = matchedKind
     record(
       'processed',
-      t('rec.documentProcessed', { name: data.filename || t('intake'), n: data.pii.entity_count }),
+      t('rec.documentProcessed', { name: data.filename || t('document'), n: data.pii.entity_count }),
       t('rec.audit', { id: data.audit_event_id }),
     )
   } catch (err) {
@@ -487,7 +491,7 @@ async function submit() {
       record('error', t('rec.requestFailed', { status: err.status }), err.message)
     } else {
       errorStatus.value = null
-      error.value = 'Backend unreachable. Is the API running?'
+      error.value = t('rec.backendUnreachableMsg')
       backendOnline.value = false
       pipeline.value = pipelineStates('error', 'skipped', 'skipped')
       record('error', t('rec.backendUnreachable'), t('rec.networkError'))
@@ -705,7 +709,7 @@ async function submit() {
             </div>
             <p class="stat">
               <b class="mono">{{ result.pii.entity_count }}</b>
-              {{ t(result.pii.entity_count === 1 ? 'stat.entity1' : 'stat.entityN', { count: result.pii.entity_count }) }}
+              {{ t(result.pii.entity_count === 1 ? 'stat.entity1' : 'stat.entityN') }}
             </p>
             <ul class="badges">
               <li v-for="type in result.pii.entity_types" :key="type" class="badge"><i class="bar" aria-hidden="true"></i>{{ type }}</li>
