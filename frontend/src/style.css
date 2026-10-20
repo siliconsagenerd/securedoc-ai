@@ -502,21 +502,28 @@ textarea:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ---------- Log ---------- */
 .log {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 320px; overflow: auto;
+}
+.log li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
+  border-radius: var(--radius-sm);
 }
-.log-body {
-  padding: 14px 16px;
-  font-family: var(--mono);
-  font-size: var(--fs-xs);
-  color: var(--ink-2);
-  max-height: 240px;
-  overflow: auto;
-  line-height: 1.6;
+.log .lvl {
+  flex: none; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em;
+  padding: 3px 7px; border-radius: 5px;
+  background: var(--surface-3); color: var(--ink-3);
 }
-.log-detail { color: var(--ink-3); }
+.log li.blocked .lvl, .log li.error .lvl { background: var(--danger-soft); color: var(--danger); }
+.log li.processed .lvl { background: var(--success-soft); color: var(--success); }
+.log-body { flex: 1; font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.55; }
+.log-body strong { display: block; color: var(--ink); font-weight: 700; }
+.log-detail { color: var(--ink-3); display: block; }
+.log time { flex: none; font-family: var(--mono); font-size: 0.64rem; color: var(--ink-4); }
 
 /* ---------- Rail / pipeline stepper ---------- */
 .rail {
