@@ -37,3 +37,17 @@ backend/data/
 .idea/
 *.swp
 *~
+.env*
+.memory-symlink-target.bak
+
+
+# Local experiments and generated artifacts
+/api-rotation-service/
+/artifacts/
+/config.json
+/job-applications-notes.md
+/laya_real20_eval_report.md
+/scripts/validate_batch_001.py
+/tests/
+*.bak
+*.bak*

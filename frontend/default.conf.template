@@ -5,11 +5,18 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Re-resolve the upstream at request time. Railway assigns a service's
+    # private address at deploy time, and nginx otherwise caches whatever it
+    # resolved at startup — which goes stale when the backend redeploys.
+    # fd12::10 is the platform DNS from /etc/resolv.conf.
+    resolver [fd12::10] valid=10s;
+
     # Same-origin API proxy. The API key is injected here, server-side, from the
     # SECUREDOC_API_KEY environment variable (substituted by the nginx image's
     # envsubst entrypoint). It never reaches the browser.
     location /api/ {
-        proxy_pass http://backend:8000;
+        set $backend "${BACKEND_URL}";
+        proxy_pass $backend$request_uri;
         # The LLM call can legitimately take tens of seconds; nginx's 60s
         # default read timeout would 504 the browser before the backend
         # replies. The backend caps its own provider call at 60s, so 90s here
@@ -27,7 +34,8 @@ server {
     }
 
     location = /health {
-        proxy_pass http://backend:8000;
+        set $backend "${BACKEND_URL}";
+        proxy_pass $backend/health;
     }
 
     location / {

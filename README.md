@@ -93,7 +93,7 @@ certification nor a claim of compliance.
   same corpus, so results should be treated as an initial measurement rather than
   a guaranteed real-world performance figure. The benign set should be
   expanded, especially with realistic German contracts, invoices, HR documents,
-  and encoded business content—before tuning the threshold further. See
+  and encoded business content before tuning the threshold further. See
   [`docs/guard-eval.md`](docs/guard-eval.md).
 
   The current guard is a deterministic first-line control. It is designed to catch
@@ -318,7 +318,7 @@ cd frontend && npm run build                                         # type-chec
 ```
 
 The pytest suite configures its own `TOKEN_VAULT_KEY` and `SECUREDOC_API_KEY`
-via `setdefault` in `tests/conftest.py`, so it runs without environment setup —
+via `setdefault` in `tests/conftest.py`, so it runs without environment setup:
 and an explicitly exported value is honoured, so the auth tests always exercise
 the key the app is actually configured with.
 
