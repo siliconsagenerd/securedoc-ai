@@ -425,7 +425,7 @@ textarea:disabled { opacity: 0.6; cursor: not-allowed; }
 .pill.ok { color: var(--success); background: var(--success-soft); border-color: rgba(21,128,61,0.22); }
 .pill.blocked { color: var(--danger); background: var(--danger-soft); border-color: rgba(185,28,28,0.22); }
 
-.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
 .badge {
   font-family: var(--mono);
   font-size: var(--fs-xs);
@@ -546,7 +546,17 @@ textarea:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ---------- Misc ---------- */
 .count { font-family: var(--mono); font-size: var(--fs-xs); color: var(--ink-4); }
-.copy { font-size: var(--fs-sm); color: var(--ink-2); }
+.copy {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--body); font-size: var(--fs-xs); font-weight: 600;
+  color: var(--ink-2); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 6px 11px; cursor: pointer;
+  transition: all var(--dur-fast) var(--spring);
+}
+.copy:hover { border-color: var(--line-2); color: var(--ink); background: var(--surface); }
+.copy svg { width: 14px; height: 14px; }
+.copy.done { color: var(--success); border-color: rgba(21,128,61,0.25); background: var(--success-soft); }
 .note { font-size: var(--fs-sm); color: var(--ink-3); font-style: italic; }
 .link { color: var(--accent); font-weight: 600; cursor: pointer; }
 .link:hover { text-decoration: underline; }
