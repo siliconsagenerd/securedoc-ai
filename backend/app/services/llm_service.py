@@ -143,6 +143,7 @@ class LLMService:
                     json={
                         "model": model_name,
                         "messages": [{"role": "user", "content": full_prompt}],
+                        "reasoning_effort": "none",
                     },
                     timeout=20.0,
                 )
@@ -151,7 +152,8 @@ class LLMService:
                     continue
                 data = resp.json()
                 choices = data.get("choices") or []
-                content = choices[0].get("message", {}).get("content") if choices else None
+                msg = (choices[0].get("message") or {}) if choices else {}
+                content = msg.get("content")
                 if content:
                     return content
             except Exception as exc:  # noqa: BLE001
